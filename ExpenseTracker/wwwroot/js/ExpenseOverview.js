@@ -41,10 +41,12 @@
     window.data.forEach(e => {
         const month = getMonth(e.Date);
         if (!month) return;
+
         if (month === currentMonth) {
             currentMonthItems.push(e);
             return;
         }
+
         if (!itemsByMonth[month]) itemsByMonth[month] = [];
         itemsByMonth[month].push(e);
     });
@@ -87,22 +89,22 @@
     });
 
     const monthKeys = Object.keys(monthsAgg).sort().reverse();
-
     const rightPane = document.getElementById("rightPane");
     const originalRightPaneHtml = rightPane.innerHTML;
 
     monthKeys.forEach(mk => {
         const wrap = document.createElement('div');
-        wrap.style.textAlign = "center";
+        wrap.className = "month-card";
 
         const [year, mm] = mk.split("-");
         const label = `${monthNames[Number(mm) - 1]} ${year}`;
+
         const title = document.createElement('h4');
         title.textContent = label;
         wrap.appendChild(title);
 
         const canvas = document.createElement('canvas');
-        canvas.style.maxWidth = "100%";
+        canvas.className = "month-chart";
         wrap.appendChild(canvas);
 
         const cats = Object.keys(monthsAgg[mk]);
@@ -116,11 +118,10 @@
 
         const btn = document.createElement("button");
         btn.textContent = "Edit Month";
-        btn.style.display = "block";
-        btn.style.margin = "10px auto";
+        btn.className = "edit-month-btn";
         btn.addEventListener("click", () => showMonthDetails(mk));
-        wrap.appendChild(btn);
 
+        wrap.appendChild(btn);
         monthsContainer.appendChild(wrap);
     });
 
@@ -187,24 +188,18 @@
         updateLeftPieChartForMonth(monthKey);
 
         const items = itemsByMonth[monthKey] || [];
-
         const [y, m] = monthKey.split("-");
         const label = `${monthNames[Number(m) - 1]} ${y}`;
 
         const container = document.createElement("div");
-        container.style.display = "flex";
-        container.style.flexDirection = "column";
-        container.style.height = "100%";
+        container.className = "month-edit-container";
 
         const h = document.createElement("h3");
         h.textContent = "Editing expenses for " + label;
         container.appendChild(h);
 
-        // Scrollable table area
         const scrollWrap = document.createElement("div");
-        scrollWrap.style.flex = "1";
-        scrollWrap.style.overflowY = "auto";
-        scrollWrap.style.paddingRight = "5px";
+        scrollWrap.className = "month-edit-scroll";
 
         const table = document.createElement("table");
         table.className = "table";
@@ -254,16 +249,8 @@
         scrollWrap.appendChild(table);
         container.appendChild(scrollWrap);
 
-        // Footer with always-visible buttons
         const footer = document.createElement("div");
-        footer.style.display = "flex";
-        footer.style.gap = "12px";
-        footer.style.padding = "10px";
-        footer.style.borderTop = "1px solid #ccc";
-        footer.style.background = "#fafafa";
-        footer.style.position = "sticky";
-        footer.style.bottom = "0";
-        footer.style.zIndex = "10";
+        footer.className = "sticky-footer";
 
         const confirmBtn = document.createElement("button");
         confirmBtn.textContent = "Confirm (Reload)";
@@ -277,11 +264,11 @@
             rightPane.innerHTML = originalRightPaneHtml;
             restoreLeftChart();
         });
-         
+
         const createBtn = document.createElement("a");
-        createBtn.href = "/Expenses/Create";       
-        createBtn.className = "btn btn-link";      
-        createBtn.textContent = "Create New";   
+        createBtn.href = "/Expenses/Create";
+        createBtn.className = "btn btn-link";
+        createBtn.textContent = "Create New";
 
         footer.appendChild(confirmBtn);
         footer.appendChild(returnBtn);

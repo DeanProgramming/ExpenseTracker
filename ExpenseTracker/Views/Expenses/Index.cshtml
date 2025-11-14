@@ -21,20 +21,21 @@
 
     var jsonData = Newtonsoft.Json.JsonConvert.SerializeObject(simpleData);
 }
+
 <script>
     window.data = @Html.Raw(jsonData);
 </script>
 
 <!-- Two-column layout -->
-<div style="display: flex; width: 100%; gap: 20px; overflow-y: auto;">
+<div class="two-column-container">
 
     <!-- Left column: current month chart -->
-    <div style="flex: 1; max-width: 50%;">
-        <canvas id="currentMonthChart" style="width:100%;"></canvas>
+    <div class="column-left">
+        <canvas id="currentMonthChart"></canvas>
     </div>
 
     <!-- Right column: Edit current month -->
-    <div id="rightPane" style="flex: 1; max-width: 50%; overflow: auto; max-height: 420px; position: relative;">
+    <div id="rightPane" class="column-right scroll-pane">
         <table class="table">
             <thead>
                 <tr>
@@ -60,36 +61,27 @@
                     </tr>
                 }
             </tbody>
-            <div style="display: flex;
-                    gap: 12px;
-                    padding: 10px;
-                    border-top: 1px solid #ccc;
-                    background: #fafafa;
-                    position: sticky;
-                    bottom: 0;
-                    z-index: 10;">
-                <a asp-action="Create" class="btn btn-link">Create New</a>
-            </div>
-		</table>
-	</div>
+        </table>
+
+        <div class="sticky-footer">
+            <a asp-action="Create" class="btn btn-link">Create New</a>
+        </div>
+    </div>
 </div>
 
 <!-- Two-column layout -->
-<div style="display: flex; width: 100%; gap: 20px;
-    padding-top: 150px;">
+<div class="two-column-container padding-top-large">
 
     <!-- Left column: average chart -->
-    <div style="flex: 1; max-width: 50%;">
-        <canvas id="avgChart" style="width:100%;"></canvas>
+    <div class="column-left">
+        <canvas id="avgChart"></canvas>
     </div>
 
     <!-- Right column: monthly charts -->
-    <div id="monthsContainer" style="flex: 1; max-width: 50%; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+    <div id="monthsContainer" class="months-grid">
         <!-- Monthly charts will be injected here -->
     </div>
-</div> 
+</div>
 
 <script src="~/js/ExpenseOverview.js"></script>
 <link rel="stylesheet" href="~/css/expense-overview.css" asp-append-version="true" />
-
- 

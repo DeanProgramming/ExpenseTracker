@@ -1,2 +1,78 @@
-﻿body {
+﻿/* General two-column layout */
+.two-column-container {
+    display: flex;
+    width: 100%;
+    gap: 20px;
 }
+
+.padding-top-large {
+    padding-top: 150px;
+}
+
+.column-left {
+    flex: 1;
+    max-width: 50%;
+}
+
+.column-right {
+    flex: 1;
+    max-width: 50%;
+    position: relative;
+}
+
+/* Scrollable edit entries */
+.scroll-pane {
+    overflow: auto;
+    max-height: 420px;
+}
+
+/* Footer for below entires table */
+.sticky-footer {
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+    background: #fafafa;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+/* Monthly charts grid */
+.months-grid {
+    flex: 1;
+    max-width: 50%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+canvas {
+    width: 100% !important;
+}
+
+.month-card {
+    text-align: center;
+}
+
+.month-chart {
+    max-width: 100%;
+}
+
+.edit-month-btn {
+    display: block;
+    margin: 10px auto;
+}
+
+.month-edit-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.month-edit-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
