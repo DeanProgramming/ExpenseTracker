@@ -1,0 +1,95 @@
+﻿@model IEnumerable<ExpenseTracker.Models.Expense>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+@{
+    var simpleData = Model.Select(e => new
+    {
+        e.Description,
+        e.Amount,
+        e.Date,
+        UserId = e.User.Id,
+        CategoryName = e.Category.Name,
+        e.Id
+    });
+
+    var jsonData = Newtonsoft.Json.JsonConvert.SerializeObject(simpleData);
+}
+<script>
+    window.data = @Html.Raw(jsonData);
+</script>
+
+<!-- Two-column layout -->
+<div style="display: flex; width: 100%; gap: 20px; overflow-y: auto;">
+
+    <!-- Left column: current month chart -->
+    <div style="flex: 1; max-width: 50%;">
+        <canvas id="currentMonthChart" style="width:100%;"></canvas>
+    </div>
+
+    <!-- Right column: Edit current month -->
+    <div id="rightPane" style="flex: 1; max-width: 50%; overflow: auto; max-height: 420px; position: relative;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>@Html.DisplayNameFor(model => model.Description)</th>
+                    <th>@Html.DisplayNameFor(model => model.Amount)</th>
+                    <th>@Html.DisplayNameFor(model => model.Date)</th>
+                    <th>@Html.DisplayNameFor(model => model.Category)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Where(e => e.Date.Month == DateTime.Now.Month && e.Date.Year == DateTime.Now.Year))
+                {
+                    <tr>
+                        <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Amount)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Date)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Category.Name)</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                            <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <div style="display: flex;
+                    gap: 12px;
+                    padding: 10px;
+                    border-top: 1px solid #ccc;
+                    background: #fafafa;
+                    position: sticky;
+                    bottom: 0;
+                    z-index: 10;">
+                <a asp-action="Create" class="btn btn-link">Create New</a>
+            </div>
+		</table>
+	</div>
+</div>
+
+<!-- Two-column layout -->
+<div style="display: flex; width: 100%; gap: 20px;
+    padding-top: 150px;">
+
+    <!-- Left column: average chart -->
+    <div style="flex: 1; max-width: 50%;">
+        <canvas id="avgChart" style="width:100%;"></canvas>
+    </div>
+
+    <!-- Right column: monthly charts -->
+    <div id="monthsContainer" style="flex: 1; max-width: 50%; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+        <!-- Monthly charts will be injected here -->
+    </div>
+</div> 
+
+<script src="~/js/ExpenseOverview.js"></script>
+<link rel="stylesheet" href="~/css/expense-overview.css" asp-append-version="true" />
+
+ 
