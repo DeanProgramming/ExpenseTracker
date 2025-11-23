@@ -32,7 +32,7 @@
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    const currentMonth = getMonth(new Date());
+    const currentMonth = getMonth(new Date()); 
 
     // Sorting months data
     const itemsByMonth = {};
@@ -210,7 +210,12 @@
             tr.innerHTML = `<td colspan="5"><em>No transactions for this month</em></td>`;
             tbody.appendChild(tr);
         } else {
+            const deleteUrlBase = window.deleteExpenseUrl; // yields '/Expenses/Delete'
+
             items.forEach(item => {
+                const tokenInput = document.querySelector('#anti-forgery-token input[name="__RequestVerificationToken"]');
+                const tokenValue = tokenInput ? tokenInput.value : '';
+
                 const tr = document.createElement("tr");
                 tr.id = `row+${item.Id}`; 
 
@@ -221,8 +226,9 @@
                     <td>${escapeHtml(item.CategoryName)}</td> 
                     <td class="actions-cell"> 
                         <button id="edit+${item.Id}" onclick="swapToConfirm(${item.Id})" class="btn btn-sm btn-edit">Edit</button>
-                        <form id="deleteForm+${item.Id}" asp-action="Delete" method="post" style="display:inline;">
-                            <input type="hidden" name="Id" value="${item.Id}" />
+                        <form id="deleteForm+${item.Id}" action="${deleteUrlBase}/${item.Id}" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="${item.Id}" />
+                            <input name="__RequestVerificationToken" type="hidden" value="${tokenValue}" /> 
                             <button type="button" id="delete+${item.Id}" class="btn btn-sm btn-delete" onclick="swapToConfirm(${item.Id})">Delete</button>
                         </form>
                     </td>
@@ -272,4 +278,31 @@
          
         showMonthDetails(currentMonth); 
     });
+
+    window.swapToConfirm = swapToConfirm;
+    function swapToConfirm(id) {
+        const deleteBtn = document.getElementById("delete+" + id);
+        const editBtn = document.getElementById("edit+" + id);
+        const form = document.getElementById("deleteForm+" + id);
+
+        if (deleteBtn.dataset.state !== "confirm") {
+            deleteBtn.dataset.state = "confirm";
+            deleteBtn.textContent = "Confirm Delete";
+            deleteBtn.style.background = "red";
+
+            editBtn.style.display = 'none';
+
+            setTimeout(() => {
+                if (deleteBtn.dataset.state === "confirm") {
+                    deleteBtn.dataset.state = "";
+                    deleteBtn.textContent = "Delete";
+                    deleteBtn.style.background = "";
+                    editBtn.style.display = 'inline-block';
+                }
+            }, 3000);
+
+        } else {
+            form.submit();
+        }
+    }
 })();

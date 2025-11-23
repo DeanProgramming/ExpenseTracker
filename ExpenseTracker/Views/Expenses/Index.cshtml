@@ -2,6 +2,10 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 
+<div id="anti-forgery-token" style="display:none">
+    @Html.AntiForgeryToken()
+</div>
+
 @{
     ViewData["Title"] = "Index";
 }
@@ -26,68 +30,8 @@
 }
 
 <script>
-    function swapToConfirm(id) {
-        const deleteBtn = document.getElementById("delete+" + id);
-        const editBtn = document.getElementById("edit+" + id);
-        const form = document.getElementById("deleteForm+" + id);
-        const row = document.getElementById("row+" + id);
-
-        console.log("-----------------------");
-        console.log(id);
-        console.log(form);
-        console.log(row);
-        console.log("-----------------------");
-
-        if (deleteBtn.dataset.state !== "confirm") {
-            deleteBtn.dataset.state = "confirm";
-            deleteBtn.textContent = "Confirm Delete";
-            deleteBtn.style.background = "red";
-
-            // Hide edit button
-            editBtn.style.display = 'none';
-
-            // Auto-reset after 3 seconds
-            setTimeout(() => {
-                if (deleteBtn.dataset.state === "confirm") {
-                    deleteBtn.dataset.state = "";
-                    deleteBtn.textContent = "Delete";
-                    deleteBtn.style.background = "";
-                    editBtn.style.display = 'inline-block';
-                }
-            }, 3000);
-
-        } else { 
-            const formData = new FormData(form);
-
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'RequestVerificationToken': formData.get('__RequestVerificationToken')
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    row.remove(); // remove row if deletion successful
-                } else {
-                    alert("Failed to delete on server!");
-                }
-            })
-            .catch(err => console.error(err));
-            /*
-            form.submit();
-            console.log("-----------------------");
-            console.log("Confirmed"); 
-            console.log("-----------------------");
-            row.remove();
-            // Submit the form*/
-        }
-    }
-</script>
-
-
-<script>
     window.data = @Html.Raw(jsonData);
+    window.deleteExpenseUrl = '@Url.Action("Delete", "Expenses")';
 </script>
 
 <!-- OVERVIEW CONTAINER: holds both rows -->
