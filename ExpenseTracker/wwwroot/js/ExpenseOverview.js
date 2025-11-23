@@ -167,6 +167,12 @@
         const [y, m] = monthKey.split("-");
         const label = `${monthNames[Number(m) - 1]} ${y}`;
 
+        document.getElementById("LeftPieMonthTitle").textContent = label;
+        if (document.getElementById("ExpenseTableTitle") != null)
+        {
+            document.getElementById("ExpenseTableTitle").textContent = "Editing expenses for " + label;
+        }
+
         currentMonthChart.data.labels = labels;
         currentMonthChart.data.datasets[0].data = values;
         currentMonthChart.options.title.text = "Expense for " + label;
@@ -177,9 +183,14 @@
         const labels = Object.keys(currentMonthData);
         const values = labels.map(c => (currentMonthData[c].toFixed(2)));
 
+        const [y, m] = currentMonth.split("-");
+        const label = `${monthNames[Number(m - 1)]} ${y}`;
+        document.getElementById("LeftPieMonthTitle").textContent = label;
+        document.getElementById("ExpenseTableTitle").textContent = "Editing expenses for " + label;
+
         currentMonthChart.data.labels = labels;
         currentMonthChart.data.datasets[0].data = values;
-        currentMonthChart.options.title.text = "Expense for Current Month " + currentMonthLabel;
+        currentMonthChart.options.title.text = "Expense for " + label;
         currentMonthChart.update();
     }
 
@@ -202,7 +213,7 @@
         scrollWrap.className = "month-edit-scroll";
 
         const table = document.createElement("table");
-        table.className = "table";
+        table.className = "table table-overflow ";
 
         table.innerHTML = `
             <thead>
@@ -226,19 +237,19 @@
         } else {
             items.forEach(item => {
                 const tr = document.createElement("tr");
-
-                const editUrl = `/Expenses/Edit/${item.Id}`;
-                const deleteUrl = `/Expenses/Delete/${item.Id}`;
+                tr.id = `row+${item.Id}`; 
 
                 tr.innerHTML = `
                     <td>${escapeHtml(item.Description)}</td>
                     <td>${Number(item.Amount).toFixed(2)}</td>
                     <td>${escapeHtml(formatDateStr(item.Date))}</td>
-                    <td>${escapeHtml(item.CategoryName)}</td>
-                    <td>
-                        <a href="${editUrl}">Edit</a>
-                        &nbsp;
-                        <a href="${deleteUrl}">Delete</a>
+                    <td>${escapeHtml(item.CategoryName)}</td> 
+                    <td class="actions-cell"> 
+                        <button id="edit+${item.Id}" onclick="swapToConfirm(${item.Id})" class="btn btn-sm btn-edit">Edit</button>
+                        <form id="deleteForm+${item.Id}" asp-action="Delete" method="post" style="display:inline;">
+                            <input type="hidden" name="Id" value="${item.Id}" />
+                            <button type="button" id="delete+${item.Id}" class="btn btn-sm btn-delete" onclick="swapToConfirm(${item.Id})">Delete</button>
+                        </form>
                     </td>
                 `;
 
@@ -252,14 +263,9 @@
         const footer = document.createElement("div");
         footer.className = "sticky-footer";
 
-        const confirmBtn = document.createElement("button");
-        confirmBtn.textContent = "Confirm (Reload)";
-        confirmBtn.className = "btn btn-primary";
-        confirmBtn.addEventListener("click", () => location.reload());
-
         const returnBtn = document.createElement("button");
         returnBtn.textContent = "Return";
-        returnBtn.className = "btn btn-secondary";
+        returnBtn.className = "btn btn-primary";
         returnBtn.addEventListener("click", () => {
             rightPane.innerHTML = originalRightPaneHtml;
             restoreLeftChart();
@@ -267,10 +273,9 @@
 
         const createBtn = document.createElement("a");
         createBtn.href = "/Expenses/Create";
-        createBtn.className = "btn btn-link";
+        createBtn.className = "btn btn-primary";
         createBtn.textContent = "Create New";
 
-        footer.appendChild(confirmBtn);
         footer.appendChild(returnBtn);
         footer.appendChild(createBtn);
 

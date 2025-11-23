@@ -20,67 +20,151 @@
     });
 
     var jsonData = Newtonsoft.Json.JsonConvert.SerializeObject(simpleData);
+
+
+    string[] monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun","Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 }
+
+<script>
+    function swapToConfirm(id) {
+        const deleteBtn = document.getElementById("delete+" + id);
+        const editBtn = document.getElementById("edit+" + id);
+        const form = document.getElementById("deleteForm+" + id);
+        const row = document.getElementById("row+" + id);
+
+        console.log("-----------------------");
+        console.log(id);
+        console.log(form);
+        console.log(row);
+        console.log("-----------------------");
+
+        if (deleteBtn.dataset.state !== "confirm") {
+            deleteBtn.dataset.state = "confirm";
+            deleteBtn.textContent = "Confirm Delete";
+            deleteBtn.style.background = "red";
+
+            // Hide edit button
+            editBtn.style.display = 'none';
+
+            // Auto-reset after 3 seconds
+            setTimeout(() => {
+                if (deleteBtn.dataset.state === "confirm") {
+                    deleteBtn.dataset.state = "";
+                    deleteBtn.textContent = "Delete";
+                    deleteBtn.style.background = "";
+                    editBtn.style.display = 'inline-block';
+                }
+            }, 3000);
+
+        } else { 
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'RequestVerificationToken': formData.get('__RequestVerificationToken')
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    row.remove(); // remove row if deletion successful
+                } else {
+                    alert("Failed to delete on server!");
+                }
+            })
+            .catch(err => console.error(err));
+            /*
+            form.submit();
+            console.log("-----------------------");
+            console.log("Confirmed"); 
+            console.log("-----------------------");
+            row.remove();
+            // Submit the form*/
+        }
+    }
+</script>
+
 
 <script>
     window.data = @Html.Raw(jsonData);
 </script>
 
-<!-- Two-column layout -->
-<div class="two-column-container">
+<!-- OVERVIEW CONTAINER: holds both rows -->
+<div class="overview-container">
 
-    <!-- Left column: current month chart -->
-    <div class="column-left">
-        <canvas id="currentMonthChart"></canvas>
-    </div>
+    <!-- ROW 1 -->
+    <div class="overview-row">
+        <!-- Left column: current month chart -->
+        <div class="column-left panel-left">
+            <h2 id="LeftPieMonthTitle" class="panel-title">This Month</h2>
+            <div class="panel-body">
+                <canvas id="currentMonthChart"></canvas>
+            </div>
+        </div>
 
-    <!-- Right column: Edit current month -->
-    <div id="rightPane" class="column-right scroll-pane">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>@Html.DisplayNameFor(model => model.Description)</th>
-                    <th>@Html.DisplayNameFor(model => model.Amount)</th>
-                    <th>@Html.DisplayNameFor(model => model.Date)</th>
-                    <th>@Html.DisplayNameFor(model => model.Category)</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model.Where(e => e.Date.Month == DateTime.Now.Month && e.Date.Year == DateTime.Now.Year))
-                {
-                    <tr>
-                        <td>@Html.DisplayFor(modelItem => item.Description)</td>
-                        <td>@Html.DisplayFor(modelItem => item.Amount)</td>
-                        <td>@Html.DisplayFor(modelItem => item.Date)</td>
-                        <td>@Html.DisplayFor(modelItem => item.Category.Name)</td>
-                        <td>
-                            <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
-                            <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <!-- Right column: Edit current month -->
+        <div id="rightPane" class="column-right panel-right scroll-pane">
+            <div class="month-edit-container">
+                <h3 id="ExpenseTableTitle">Editing expenses for @monthNames[DateTime.Now.Month - 1]</h3>
 
-        <div class="sticky-footer">
-            <a asp-action="Create" class="btn btn-link">Create New</a>
+                <div class="month-edit-scroll">
+                    <table class="table table-overflow ">
+                        <thead>
+                            <tr>
+                                <th>@Html.DisplayNameFor(model => model.Description)</th>
+                                <th>@Html.DisplayNameFor(model => model.Amount)</th>
+                                <th>@Html.DisplayNameFor(model => model.Date)</th>
+                                <th>@Html.DisplayNameFor(model => model.Category)</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Where(e => e.Date.Month == DateTime.Now.Month && e.Date.Year == DateTime.Now.Year))
+                            {
+                                <tr id="row+@item.Id">
+                                    <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.Amount)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.Date)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.Category.Name)</td>
+                                    <td class="actions-cell"> 
+                                        <button id="edit+@item.Id" onclick="swapToConfirm(@item.Id)" class="btn btn-sm btn-edit">Edit</button>
+                                        <form id="deleteForm+@item.Id" asp-action="Delete" method="post" style="display:inline;">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <button type="button" id="delete+@item.Id" class="btn btn-sm btn-delete" onclick="swapToConfirm(@item.Id)">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+
+                <div class="sticky-footer">
+                    <a asp-action="Create" class="btn btn-primary btn-create">+ Create New</a>
+                </div>
+            </div> 
         </div>
     </div>
-</div>
 
-<!-- Two-column layout -->
-<div class="two-column-container padding-top-large">
+    <!-- ROW 2 -->
+    <div class="overview-row">
+        <!-- Left column: average chart -->
+        <div class="column-left panel-left">
+            <h2 class="panel-title">Average / Trends</h2>
+            <div class="panel-body">
+                <canvas id="avgChart"></canvas>
+            </div>
+        </div>
 
-    <!-- Left column: average chart -->
-    <div class="column-left">
-        <canvas id="avgChart"></canvas>
+        <!-- Right column: monthly charts -->
+        <div id="monthsContainer" class="column-right panel-right months-grid">
+            <!-- Monthly charts will be injected here by ExpenseOverview.js -->
+            <!-- If you need sample markup for month cards, ExpenseOverview.js can create elements with class .month-card -->
+        </div>
     </div>
 
-    <!-- Right column: monthly charts -->
-    <div id="monthsContainer" class="months-grid">
-        <!-- Monthly charts will be injected here -->
-    </div>
 </div>
 
 <script src="~/js/ExpenseOverview.js"></script>
