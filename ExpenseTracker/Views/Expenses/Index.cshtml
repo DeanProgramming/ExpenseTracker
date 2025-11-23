@@ -106,44 +106,7 @@
         <!-- Right column: Edit current month -->
         <div id="rightPane" class="column-right panel-right scroll-pane">
             <div class="month-edit-container">
-                <h3 id="ExpenseTableTitle">Editing expenses for @monthNames[DateTime.Now.Month - 1]</h3>
-
-                <div class="month-edit-scroll">
-                    <table class="table table-overflow ">
-                        <thead>
-                            <tr>
-                                <th>@Html.DisplayNameFor(model => model.Description)</th>
-                                <th>@Html.DisplayNameFor(model => model.Amount)</th>
-                                <th>@Html.DisplayNameFor(model => model.Date)</th>
-                                <th>@Html.DisplayNameFor(model => model.Category)</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model.Where(e => e.Date.Month == DateTime.Now.Month && e.Date.Year == DateTime.Now.Year))
-                            {
-                                <tr id="row+@item.Id">
-                                    <td>@Html.DisplayFor(modelItem => item.Description)</td>
-                                    <td>@Html.DisplayFor(modelItem => item.Amount)</td>
-                                    <td>@Html.DisplayFor(modelItem => item.Date)</td>
-                                    <td>@Html.DisplayFor(modelItem => item.Category.Name)</td>
-                                    <td class="actions-cell"> 
-                                        <button id="edit+@item.Id" onclick="swapToConfirm(@item.Id)" class="btn btn-sm btn-edit">Edit</button>
-                                        <form id="deleteForm+@item.Id" asp-action="Delete" method="post" style="display:inline;">
-                                            <input type="hidden" name="Id" value="@item.Id" />
-                                            <button type="button" id="delete+@item.Id" class="btn btn-sm btn-delete" onclick="swapToConfirm(@item.Id)">Delete</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-
-                <div class="sticky-footer">
-                    <a asp-action="Create" class="btn btn-primary btn-create">+ Create New</a>
-                </div>
+                <h3 id="ExpenseTableTitle">Editing expenses for @monthNames[DateTime.Now.Month - 1]</h3>                 
             </div> 
         </div>
     </div>
@@ -161,7 +124,6 @@
         <!-- Right column: monthly charts -->
         <div id="monthsContainer" class="column-right panel-right months-grid">
             <!-- Monthly charts will be injected here by ExpenseOverview.js -->
-            <!-- If you need sample markup for month cards, ExpenseOverview.js can create elements with class .month-card -->
         </div>
     </div>
 

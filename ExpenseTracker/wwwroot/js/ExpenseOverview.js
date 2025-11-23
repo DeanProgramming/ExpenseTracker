@@ -44,11 +44,10 @@
 
         if (month === currentMonth) {
             currentMonthItems.push(e);
-            return;
         }
 
         if (!itemsByMonth[month]) itemsByMonth[month] = [];
-        itemsByMonth[month].push(e);
+            itemsByMonth[month].push(e);
     });
 
     // Bottom Left Total average of all months NOT including current month
@@ -82,7 +81,7 @@
     const monthsAgg = {};
     window.data.forEach(e => {
         const m = getMonth(e.Date);
-        if (!m || m === currentMonth) return;
+        if (!m) return;
 
         monthsAgg[m] = monthsAgg[m] || {};
         monthsAgg[m][e.CategoryName] = (monthsAgg[m][e.CategoryName] || 0) + Number(e.Amount);
@@ -93,6 +92,9 @@
     const originalRightPaneHtml = rightPane.innerHTML;
 
     monthKeys.forEach(mk => {
+        const m = getMonth(mk);
+        if (m === currentMonth) return;
+
         const wrap = document.createElement('div');
         wrap.className = "month-card";
 
@@ -125,29 +127,17 @@
         monthsContainer.appendChild(wrap);
     });
 
-    // Top left current month pie chart
-    const currentMonthData = {};
-    currentMonthItems.forEach(e => {
-        currentMonthData[e.CategoryName] =
-            (currentMonthData[e.CategoryName] || 0) + Number(e.Amount);
-    });
 
     let currentMonthChart = null;
     const leftCanvas = document.getElementById("currentMonthChart").getContext("2d");
 
-    const catsCur = Object.keys(currentMonthData);
-    const valsCur = catsCur.map(c => (currentMonthData[c].toFixed(2)));
-
-    let currentMonthLabel = monthNames[new Date().getMonth()];
-
     currentMonthChart = new Chart(leftCanvas, {
         type: "pie",
         data: {
-            labels: catsCur,
-            datasets: [{ backgroundColor: barColors, data: valsCur }]
+            datasets: [{ backgroundColor: barColors}]
         },
         options: {
-            title: { display: true, text: "Expense for Current Month " + currentMonthLabel }
+            title: { display: true, text: "Expense for Current Month "}
         }
     });
 
@@ -172,21 +162,6 @@
         {
             document.getElementById("ExpenseTableTitle").textContent = "Editing expenses for " + label;
         }
-
-        currentMonthChart.data.labels = labels;
-        currentMonthChart.data.datasets[0].data = values;
-        currentMonthChart.options.title.text = "Expense for " + label;
-        currentMonthChart.update();
-    }
-
-    function restoreLeftChart() {
-        const labels = Object.keys(currentMonthData);
-        const values = labels.map(c => (currentMonthData[c].toFixed(2)));
-
-        const [y, m] = currentMonth.split("-");
-        const label = `${monthNames[Number(m - 1)]} ${y}`;
-        document.getElementById("LeftPieMonthTitle").textContent = label;
-        document.getElementById("ExpenseTableTitle").textContent = "Editing expenses for " + label;
 
         currentMonthChart.data.labels = labels;
         currentMonthChart.data.datasets[0].data = values;
@@ -263,20 +238,24 @@
         const footer = document.createElement("div");
         footer.className = "sticky-footer";
 
-        const returnBtn = document.createElement("button");
-        returnBtn.textContent = "Return";
-        returnBtn.className = "btn btn-primary";
-        returnBtn.addEventListener("click", () => {
-            rightPane.innerHTML = originalRightPaneHtml;
-            restoreLeftChart();
-        });
+
+        if (monthKey !== currentMonth) {
+            const returnBtn = document.createElement("button");
+            returnBtn.textContent = "Return";
+            returnBtn.className = "btn btn-primary";
+            returnBtn.addEventListener("click", () => {
+                rightPane.innerHTML = originalRightPaneHtml;
+                updateLeftPieChartForMonth(currentMonth);
+                showMonthDetails(currentMonth);
+            });
+            footer.appendChild(returnBtn);
+        }
 
         const createBtn = document.createElement("a");
         createBtn.href = "/Expenses/Create";
         createBtn.className = "btn btn-primary";
         createBtn.textContent = "Create New";
 
-        footer.appendChild(returnBtn);
         footer.appendChild(createBtn);
 
         container.appendChild(footer);
@@ -285,4 +264,12 @@
         rightPane.appendChild(container);
     }
 
+    document.addEventListener("DOMContentLoaded", function () { 
+        if (typeof itemsByMonth === "undefined" || !currentMonth) {
+            console.warn("itemsByMonth or currentMonthKey missing; right pane will be empty.");
+            return;
+        }
+         
+        showMonthDetails(currentMonth); 
+    });
 })();

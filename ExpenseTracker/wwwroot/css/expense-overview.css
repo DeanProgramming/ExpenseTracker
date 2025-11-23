@@ -1,205 +1,214 @@
-﻿/* Container that wraps both rows */
+﻿/* Theme engine */
+:root {
+    /* colors */
+    --c-bg-light: #ffffff;
+    --c-bg-dark: #181823;
+    --c-panel-light: #f9fbff;
+    --c-panel-accent: #d9f9ff;
+    --c-text-dark: #16202a;
+
+    /* text */
+    --c-primary-1: #1e88e5;
+    --c-primary-2: #1976d2;
+    --c-edit-bg: rgba(40,160,120,0.07);
+    --c-edit-border: rgba(40,160,120,0.12);
+    --c-edit-text: #1b8a5a;
+    --c-del-bg: rgba(220,70,70,0.06);
+    --c-del-border: rgba(220,70,70,0.10);
+    --c-del-hover: rgba(220,70,70,0.12);
+    --c-del-text: #b33a3a;
+
+    /* button shadows */
+    --shadow-main: 0 10px 30px rgba(0,0,0,0.9);
+    --shadow-panel: 0 6px 18px rgba(100,127,109,0.81);
+    --shadow-btn: 0 6px 14px rgba(25,118,210,0.14);
+
+    /* ayout radius */
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+    --gap-lg: 20px;
+    --gap-md: 12px;
+    --gap-sm: 8px;
+    --fade-1: rgba(255, 255, 255, 0.85);
+    --fade-2: rgba(250, 251, 255, 0.98);
+}
+ 
 .overview-container {
     width: 100%;
-    box-sizing: border-box;
     padding: 18px;
-    border-radius: 16px;
-    background: linear-gradient(180deg, #ffffff 0%, #181823 100%); 
-    box-shadow: 0 10px 30px rgb(0 0 0 / 90%);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, var(--c-bg-light), var(--c-bg-dark));
+    box-shadow: var(--shadow-main);
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--gap-lg);
 }
-
-/* Each row is a rounded panel with its own subtle border and inner spacing */
+ 
 .overview-row {
     display: flex;
     gap: 18px;
-    border-radius: 12px;
-    padding: 12px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgb(104 104 169 / 85%));
-    box-shadow: 0 6px 18px rgb(100 127 109 / 81%);
+    border-radius: var(--radius-md);
+    padding: var(--gap-md);
+    background: linear-gradient(180deg, var(--fade-1), rgb(104 104 169 / 85%));
+    box-shadow: var(--shadow-panel);
     align-items: stretch;
     height: 400px;
 }
-
-/* Left / Right column shared sizing (two columns per row) */
+ 
 .column-left,
 .column-right {
     flex: 1 1 50%;
-    min-width: 0; /* allow proper shrinking in flex */
+    min-width: 0;
 }
-
-/* Panel left (charts) — distinct background */
-.panel-left {
-    background: linear-gradient(315deg, rgb(255 255 255), rgb(217 249 255));
-    border-radius: 10px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column; 
-}
-
-/* Panel right (lists / controls) — different background */
-    .panel-right {
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,251,255,0.98));
-    border-radius: 10px;
-    padding: 12px;
+ 
+.panel-left,
+.panel-right {
+    border-radius: var(--radius-sm);
+    padding: var(--gap-md);
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    border: 1px solid rgba(10, 10, 20, 0.03);
+    gap: var(--gap-sm);
 }
 
-/* Titles inside panels */
+.panel-left {
+    background: linear-gradient(315deg, #fff, var(--c-panel-accent));
+}
+
+.panel-right {
+    background: linear-gradient(180deg, var(--fade-2), var(--fade-2));
+    border: 1px solid rgba(10, 10, 20, 0.03);
+}
+ 
 .panel-title {
     margin: 0;
     font-size: 1.05rem;
     font-weight: 600;
-    color: #16202a;
-}
+    color: var(--c-text-dark);
+} 
 
-/* Panel body holds canvas or table */
 .panel-body {
-    flex: 1 1 auto;
+    flex: 1;
     min-height: 120px;
     display: flex;
     flex-direction: column;
 }
-
-/* Make canvas responsive */
+ 
 canvas {
     width: 100% !important;
     height: auto !important;
-    display: block;
 }
-
-/* Scrollable right pane content (table) */
+ 
 .scroll-pane {
     overflow: auto;
     max-height: 420px;
 }
 
-/* Table tweaks */
+/* table items  */
 .table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.95rem;
 }
 
-    .table thead th {
-        text-align: left;
-        font-weight: 700;
-        padding: 8px 10px;
-        color: #334B5C;
-        border-bottom: 1px dotted rgba(50,60,70,0.06);
-    }
+.table thead th {
+    text-align: left;
+    font-weight: 700;
+    padding: 8px 10px;
+    color: #334B5C;
+    border-bottom: 1px dotted rgba(50,60,70,0.06);
+}
 
-    .table tbody td {
-        padding: 8px 10px;
-        border-bottom: 1px solid rgba(20,25,30,0.03);
-    }
+.table tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(20,25,30,0.03);
+}
 
-/* Action buttons styled as pills */
+.table-overflow {
+    height: 250px !important;
+    overflow: auto;
+    display: block;
+}
+
 .actions-cell {
     display: flex;
-    gap: 8px;
+    gap: var(--gap-sm);
     justify-content: flex-end;
     align-items: center;
 }
-
-/* Buttons */
+ 
 .btn {
     display: inline-block;
-    text-decoration: none;
     padding: 6px 10px;
     border-radius: 8px;
     font-size: 0.85rem;
+    text-decoration: none;
     cursor: pointer;
-    border: 1px solid transparent;
     transition: all 160ms ease;
+    border: 1px solid transparent;
 }
 
-/* Primary create button */
-.btn-create,
 .btn-primary {
-    background: linear-gradient(180deg, #1e88e5, #1976d2);
+    background: linear-gradient(180deg, var(--c-primary-1), var(--c-primary-2));
     color: #fff;
     border-color: rgba(15,76,129,0.12);
-    box-shadow: 0 6px 14px rgba(25,118,210,0.14);
+    box-shadow: var(--shadow-btn);
 }
 
-    .btn-create:hover {
-        transform: translateY(-2px);
-    }
-
-/* Small edit/delete buttons */
 .btn-sm {
     padding: 5px 8px;
     font-size: 0.80rem;
-    border-radius: 6px;
+    border-radius: var(--radius-xs);
 }
 
-/* Edit / Delete specifics */
 .btn-edit {
-    background: rgba(40,160,120,0.07);
-    color: #1b8a5a;
-    border: 1px solid rgba(40,160,120,0.12);
+    background: var(--c-edit-bg);
+    color: var(--c-edit-text);
+    border: 1px solid var(--c-edit-border);
 }
 
 .btn-delete {
-    background: rgba(220,70,70,0.06);
-    color: #b33a3a;
-    border: 1px solid rgba(220,70,70,0.10);
+    background: var(--c-del-bg);
+    color: var(--c-del-text);
+    border: 1px solid var(--c-del-border);
 }
 
 .btn-delete:hover {
-    background: rgba(220,70,70,0.12);
-    color: #b33a3a;
-    border: 1px solid rgba(220,70,70,0.10);
+    background: var(--c-del-hover);
 }
-
-/* Secondary link style */
-.btn-secondary {
-    background: transparent;
-    color: #2a4b63;
-    border: 1px dashed rgba(40,60,80,0.05);
-}
-
-/* Sticky footer inside right panel */
+     
 .sticky-footer {
     display: flex;
     gap: 12px;
-    padding: 10px; 
-    background: linear-gradient(200deg, rgba(255, 255, 255, 0.9), rgb(203 203 203 / 90%));
+    padding: 10px;
+    background: linear-gradient(200deg, rgba(255,255,255,0.9), rgb(203 203 203 / 90%));
     position: sticky;
     bottom: 0;
     z-index: 10;
     align-items: center;
 }
 
-/* Grid for month cards on the right panel of second row */
+/* Monthly grid */
 .months-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 12px;
-    align-items: start;
 }
 
-/* individual month cards */
 .month-card {
     background: linear-gradient(180deg, rgba(249,251,255,0.95), rgba(245,247,250,0.95));
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     padding: 8px;
     border: 1px solid rgba(20,30,40,0.04);
     text-align: center;
 }
 
-    .month-card .month-chart {
-        max-width: 100%;
-        height: 110px;
-    }
+.month-card .month-chart {
+    height: 110px;
+    max-width: 100%;
+}
 
-/* small edit button for month cards */
 .edit-month-btn {
     display: inline-block;
     margin-top: 8px;
@@ -207,28 +216,11 @@ canvas {
     border-radius: 8px;
     background: rgba(20,30,40,0.04);
     color: #123;
-    text-decoration: none;
 }
-
-/* Responsive: stack columns on small screens */
+ 
 @media (max-width: 900px) {
     .overview-row {
         flex-direction: column;
+        height: auto;
     }
-
-    .column-left,
-    .column-right {
-        max-width: 100%;
-    }
-}
-
-/* Small visual tweaks */
-.table-compact tbody tr:hover {
-    background: rgba(20, 35, 50, 0.02);
-}
-
-.table-overflow {
-    height: 250px !important;
-    overflow: scroll;
-    display: block;
 }
