@@ -22,6 +22,7 @@ namespace ExpenseTracker.Data
             // Categories
             if (!context.Categories.Any())
             {
+                //Need a way to be able to create another category and add it to the colour list
                 context.Categories.AddRange(
                     new Category { Name = "Rent" },
                     new Category { Name = "Transport" },

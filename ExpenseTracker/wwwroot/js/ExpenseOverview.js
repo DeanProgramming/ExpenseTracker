@@ -23,11 +23,21 @@
     }
 
     if (!window.data || !Array.isArray(window.data)) return;
+     
+    const categoryColors = {
+        "Rent": "#b91d47",
+        "Transport": "#00aba9",
+        "Food": "#2b5797",
+        "Groceries": "#e8c3b9",
+        "Coffee": "#1e7145",
+        "Utilities": "#ff9900",
+        "Entertainment": "#ffcc00",
+        "Subscriptions": "#66ccff",
+        "Shopping": "#cc66ff",
+        "Education": "#99ff99",
+        "Misc": "#ff6666"  
+    };
 
-    const barColors = [
-        "#b91d47", "#00aba9", "#2b5797", "#e8c3b9", "#1e7145",
-        "#ff9900", "#ffcc00", "#66ccff", "#cc66ff", "#99ff99"
-    ];
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -65,12 +75,15 @@
 
     const avgLabels = Object.keys(categories);
     const avgData = avgLabels.map(c => (categories[c].total / categories[c].months.size).toFixed(2));
+    const backgroundColors = avgLabels.map(label =>
+        categoryColors[label] ?? "#000000"
+    );
 
     const avgChart = new Chart(document.getElementById("avgChart").getContext('2d'), {
         type: "pie",
         data: {
             labels: avgLabels,
-            datasets: [{ backgroundColor: barColors, data: avgData }]
+            datasets: [{ backgroundColor: backgroundColors, data: avgData }]
         },
         options: { title: { display: true, text: "Average Monthly Expenses per Category" } }
     });
@@ -111,10 +124,13 @@
 
         const cats = Object.keys(monthsAgg[mk]);
         const vals = cats.map(c => (monthsAgg[mk][c].toFixed(2)));
+        const monthColours = cats.map(label =>
+            categoryColors[label] ?? "#000000"
+        );
 
         new Chart(canvas.getContext("2d"), {
             type: "pie",
-            data: { labels: cats, datasets: [{ data: vals, backgroundColor: barColors }] },
+            data: { labels: cats, datasets: [{ data: vals, backgroundColor: monthColours }] },
             options: { legend: { display: false } }
         });
 
@@ -134,7 +150,7 @@
     currentMonthChart = new Chart(leftCanvas, {
         type: "pie",
         data: {
-            datasets: [{ backgroundColor: barColors}]
+            datasets: [{ }]
         },
         options: {
             title: { display: true, text: "Expense for Current Month "}
@@ -163,8 +179,13 @@
             document.getElementById("ExpenseTableTitle").textContent = "Editing expenses for " + label;
         }
 
+        const monthColours = labels.map(label =>
+            categoryColors[label] ?? "#000000"
+        );
+
         currentMonthChart.data.labels = labels;
         currentMonthChart.data.datasets[0].data = values;
+        currentMonthChart.data.datasets[0].backgroundColor = monthColours;
         currentMonthChart.options.title.text = "Expense for " + label;
         currentMonthChart.update();
     }
@@ -228,7 +249,7 @@
                         <button id="edit+${item.Id}" onclick="swapToConfirm(${item.Id})" class="btn btn-sm btn-edit">Edit</button>
                         <form id="deleteForm+${item.Id}" action="${deleteUrlBase}/${item.Id}" method="post" style="display:inline;">
                             <input type="hidden" name="id" value="${item.Id}" />
-                            <input name="__RequestVerificationToken" type="hidden" value="${tokenValue}" /> 
+                            <input name="__RequestVerificationToken" type="hidden" value="${tokenValue}" />  
                             <button type="button" id="delete+${item.Id}" class="btn btn-sm btn-delete" onclick="swapToConfirm(${item.Id})">Delete</button>
                         </form>
                     </td>
@@ -270,13 +291,20 @@
         rightPane.appendChild(container);
     }
 
-    document.addEventListener("DOMContentLoaded", function () { 
-        if (typeof itemsByMonth === "undefined" || !currentMonth) {
-            console.warn("itemsByMonth or currentMonthKey missing; right pane will be empty.");
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectedMonthInput = document.getElementById("currentSelectedMonth");
+        const currentSelectedMonth = selectedMonthInput ? selectedMonthInput.value : null;
+
+        const monthToUse = currentSelectedMonth && currentSelectedMonth !== ""
+            ? currentSelectedMonth
+            : currentMonth;
+
+        if (typeof itemsByMonth === "undefined" || !monthToUse) {
+            console.warn("itemsByMonth or monthToUse missing; right pane will be empty.");
             return;
         }
-         
-        showMonthDetails(currentMonth); 
+
+        showMonthDetails(monthToUse);
     });
 
     window.swapToConfirm = swapToConfirm;
