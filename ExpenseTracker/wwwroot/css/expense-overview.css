@@ -223,4 +223,28 @@ canvas {
         flex-direction: column;
         height: auto;
     }
+
+.create-panel-container {
+    background: linear-gradient(180deg, var(--fade-2), var(--fade-2));
+    padding: 16px;
+    border-radius: var(--radius-md);
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 14px;
+}
+
+.input-box {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: #fff;
+}
+
+.form-buttons {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
 }

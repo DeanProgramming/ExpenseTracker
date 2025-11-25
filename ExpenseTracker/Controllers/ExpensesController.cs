@@ -36,6 +36,11 @@ namespace ExpenseTracker.Controllers
                 //.Where(e => e.Date.Month == DateTime.Today.Month)
                 .ToListAsync();
 
+            ViewBag.CategoriesForJS = await _context.Categories
+                .OrderBy(c => c.Id)
+                .Select(c => new { c.Id, c.Name }) 
+                .ToListAsync();
+
             return View(expenses);
         }
 

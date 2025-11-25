@@ -62,8 +62,8 @@
             itemsByMonth[month].push(e);
     });
 
-    const rightPane = document.getElementById("rightPane");
-    const originalRightPaneHtml = rightPane.innerHTML;
+    const rightPanel = document.getElementById("rightPane");
+    const originalRightPaneHtml = rightPanel.innerHTML;
 
     //Bottom right Pie Chart
     let PieCharts = {};
@@ -341,12 +341,12 @@
                     <td>${escapeHtml(formatDateStr(item.Date))}</td>
                     <td>${escapeHtml(item.CategoryName)}</td> 
                     <td class="actions-cell"> 
-                        <button id="edit+${item.Id}" onclick="swapToConfirm(${item.Id})" class="btn btn-sm btn-edit">Edit</button>
+                        <button id="edit+${item.Id}" onclick="SwapToConfirm(${item.Id})" class="btn btn-sm btn-edit">Edit</button>
                         <form id="deleteForm+${item.Id}" action="${deleteUrlBase}/${item.Id}" method="post" style="display:inline;">
                             <input type="hidden" name="id" value="${item.Id}" />
                             <input name="__RequestVerificationToken" type="hidden" value="${tokenValue}" />  
                             <input type="hidden"  id="formMonthSelected+${item.Id}" name="formMonthSelected" value="${monthKey}" />
-                            <button type="button" id="delete+${item.Id}" class="btn btn-sm btn-delete" onclick="swapToConfirm(${item.Id})">Delete</button>
+                            <button type="button" id="delete+${item.Id}" class="btn btn-sm btn-delete" onclick="SwapToConfirm(${item.Id})">Delete</button>
                         </form>
                     </td>
                 `;
@@ -367,7 +367,7 @@
             returnBtn.textContent = "Return";
             returnBtn.className = "btn btn-primary";
             returnBtn.addEventListener("click", () => {
-                rightPane.innerHTML = originalRightPaneHtml;
+                rightPanel.innerHTML = originalRightPaneHtml;
                 updateLeftPieChartForMonth(currentMonth);
                 showMonthDetails(currentMonth);
             });
@@ -375,7 +375,7 @@
         }
 
         const createBtn = document.createElement("a");
-        createBtn.href = "/Expenses/Create";
+        createBtn.onclick = SwapToCreate;
         createBtn.className = "btn btn-primary";
         createBtn.textContent = "Create New";
 
@@ -383,8 +383,8 @@
 
         container.appendChild(footer); 
 
-        rightPane.innerHTML = "";
-        rightPane.appendChild(container);
+        rightPanel.innerHTML = "";
+        rightPanel.appendChild(container);
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -396,8 +396,65 @@
         showMonthDetails(currentMonth);
     });
 
-    window.swapToConfirm = swapToConfirm;
-    function swapToConfirm(id) {
+
+    window.SwapToCreate = SwapToCreate; 
+    function SwapToCreate() {
+
+        const container = document.createElement("div");
+        container.className = "create-panel-container";
+
+        container.innerHTML = `
+        <h3>Create New Expense</h3>
+
+        <form id="createExpenseForm">
+
+            <div class="form-field">
+                <label>Description</label>
+                <input type="text" name="Description" class="input-box" required />
+            </div>
+
+            <div class="form-field">
+                <label>Amount</label>
+                <input type="number" name="Amount" class="input-box" step="0.01" required />
+            </div>
+
+            <div class="form-field">
+                <label>Date</label>
+                <input type="date" name="Date" class="input-box" required />
+            </div>
+
+            <div class="form-field">
+                <label>Category</label>
+            <select name="CategoryId" class="input-box" required>
+                ${window.categoriesList
+                    .map(c => `<option value="${c.Id}">${escapeHtml(c.Name)}</option>`)
+                    .join("")}
+            </select>
+            </div>
+
+            <div class="form-buttons">
+                <button type="button" class="btn btn-primary" id="createSubmitBtn">Create</button>
+                <button type="button" class="btn" id="createCancelBtn">Cancel</button>
+            </div>
+
+        </form>
+        `;
+
+        rightPanel.innerHTML = "";
+        rightPanel.appendChild(container);
+
+        document.getElementById("createCancelBtn").onclick = () => {
+            rightPanel.innerHTML = originalRightPaneHtml;
+            showMonthDetails(currentSelectedMonthKey);
+        };
+
+        //document.getElementById("createSubmitBtn").onclick = submitCreateForm;
+    }
+
+
+
+    window.SwapToConfirm = SwapToConfirm;
+    function SwapToConfirm(id) {
         const deleteBtn = document.getElementById("delete+" + id);
         const editBtn = document.getElementById("edit+" + id);
         const form = document.getElementById("deleteForm+" + id);

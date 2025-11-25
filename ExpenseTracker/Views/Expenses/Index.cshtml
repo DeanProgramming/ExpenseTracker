@@ -31,7 +31,11 @@
 
 <script>
     window.data = @Html.Raw(jsonData);
-    window.deleteExpenseUrl = '@Url.Action("Delete", "Expenses")';
+    window.deleteExpenseUrl = '@Url.Action("Delete", "Expenses")';  
+</script>
+
+<script>
+    window.categoriesList = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CategoriesForJS));
 </script>
 
 <!-- OVERVIEW CONTAINER: holds both rows -->
@@ -51,7 +55,7 @@
         <div id="rightPane" class="column-right panel-right scroll-pane">
             <div class="month-edit-container">
                 <h3 id="ExpenseTableTitle">Editing expenses for @monthNames[DateTime.Now.Month - 1]</h3>                 
-            </div> 
+            </div>  
         </div>
     </div>
 
