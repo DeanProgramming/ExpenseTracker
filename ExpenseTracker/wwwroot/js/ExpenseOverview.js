@@ -250,6 +250,7 @@
                         <form id="deleteForm+${item.Id}" action="${deleteUrlBase}/${item.Id}" method="post" style="display:inline;">
                             <input type="hidden" name="id" value="${item.Id}" />
                             <input name="__RequestVerificationToken" type="hidden" value="${tokenValue}" />  
+                            <input type="hidden"  id="formMonthSelected+${item.Id}" name="formMonthSelected" value="${monthKey}" />
                             <button type="button" id="delete+${item.Id}" class="btn btn-sm btn-delete" onclick="swapToConfirm(${item.Id})">Delete</button>
                         </form>
                     </td>
@@ -285,26 +286,19 @@
 
         footer.appendChild(createBtn);
 
-        container.appendChild(footer);
+        container.appendChild(footer); 
 
         rightPane.innerHTML = "";
         rightPane.appendChild(container);
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        const selectedMonthInput = document.getElementById("currentSelectedMonth");
-        const currentSelectedMonth = selectedMonthInput ? selectedMonthInput.value : null;
-
-        const monthToUse = currentSelectedMonth && currentSelectedMonth !== ""
-            ? currentSelectedMonth
-            : currentMonth;
-
-        if (typeof itemsByMonth === "undefined" || !monthToUse) {
-            console.warn("itemsByMonth or monthToUse missing; right pane will be empty.");
+        if (typeof itemsByMonth === "undefined" || !currentMonth) {
+            console.warn("itemsByMonth or currentMonthKey missing; right pane will be empty."); 
             return;
         }
 
-        showMonthDetails(monthToUse);
+        showMonthDetails(currentMonth);
     });
 
     window.swapToConfirm = swapToConfirm;
@@ -312,6 +306,8 @@
         const deleteBtn = document.getElementById("delete+" + id);
         const editBtn = document.getElementById("edit+" + id);
         const form = document.getElementById("deleteForm+" + id);
+        const row = document.getElementById("row+" + id);
+        const selectedMonth = document.getElementById("formMonthSelected+" + id);
 
         if (deleteBtn.dataset.state !== "confirm") {
             deleteBtn.dataset.state = "confirm";
@@ -329,8 +325,22 @@
                 }
             }, 3000);
 
-        } else {
-            form.submit();
+        } else { 
+            const data = new FormData(form);
+
+            fetch(form.action, {
+                method: "POST",
+                body: data
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Network response was not ok");
+                return response.json().catch(() => ({})); // fallback if no JSON returned
+            })
+            .then(() => { 
+                if (row) row.remove();
+                updateLeftPieChartForMonth(selectedMonth);
+            })
+            .catch(err => console.error("Delete failed:", err));
         }
     }
 })();
