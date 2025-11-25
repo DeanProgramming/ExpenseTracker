@@ -42,7 +42,9 @@
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    const currentMonth = getMonth(new Date()); 
+    const currentMonth = getMonth(new Date());
+
+    let currentSelectedMonthKey = getMonth(new Date());
 
     // Sorting months data
     const itemsByMonth = {};
@@ -60,102 +62,193 @@
             itemsByMonth[month].push(e);
     });
 
-    // Bottom Left Total average of all months NOT including current month
-    let categories = {};
-    Object.keys(itemsByMonth).forEach(m => {
-        itemsByMonth[m].forEach(e => {
-            const cat = e.CategoryName;
-            if (!categories[cat]) {
-                categories[cat] = { total: 0, months: new Set() };
-            }
-            categories[cat].total += Number(e.Amount || 0);
-            categories[cat].months.add(m);
-        });
-    });
-
-    const avgLabels = Object.keys(categories);
-    const avgData = avgLabels.map(c => (categories[c].total / categories[c].months.size).toFixed(2));
-    const backgroundColors = avgLabels.map(label =>
-        categoryColors[label] ?? "#000000"
-    );
-
-    const avgChart = new Chart(document.getElementById("avgChart").getContext('2d'), {
-        type: "pie",
-        data: {
-            labels: avgLabels,
-            datasets: [{ backgroundColor: backgroundColors, data: avgData }]
-        },
-        options: { title: { display: true, text: "Average Monthly Expenses per Category" } }
-    });
-
-    // Bottom right pie charts of each past month with option to edit data
-    const monthsContainer = document.getElementById("monthsContainer");
-
-    const monthsAgg = {};
-    window.data.forEach(e => {
-        const m = getMonth(e.Date);
-        if (!m) return;
-
-        monthsAgg[m] = monthsAgg[m] || {};
-        monthsAgg[m][e.CategoryName] = (monthsAgg[m][e.CategoryName] || 0) + Number(e.Amount);
-    });
-
-    const monthKeys = Object.keys(monthsAgg).sort().reverse();
     const rightPane = document.getElementById("rightPane");
     const originalRightPaneHtml = rightPane.innerHTML;
 
-    monthKeys.forEach(mk => {
-        const m = getMonth(mk);
-        if (m === currentMonth) return;
+    //Bottom right Pie Chart
+    let PieCharts = {};
+    GenerateOtherMonthPieCharts();
 
-        const wrap = document.createElement('div');
-        wrap.className = "month-card";
+    //Top Left Pie Chart
+    let currentMonthChart = null;
+    GenerateCurrentMonthPieChart();
+     
+    // Bottom Left Total average of all months NOT including current month
+    let avgChart = null;
+    GenerateAveragePieChart();
 
-        const [year, mm] = mk.split("-");
-        const label = `${monthNames[Number(mm) - 1]} ${year}`;
+    function UpdateAllCharts() {
+        // Get all new data 
+        for (let k in itemsByMonth) delete itemsByMonth[k];
 
-        const title = document.createElement('h4');
-        title.textContent = label;
-        wrap.appendChild(title);
+        let currentSelectedMonthItems = [];
 
-        const canvas = document.createElement('canvas');
-        canvas.className = "month-chart";
-        wrap.appendChild(canvas);
+        window.data.forEach(e => {
+            const month = getMonth(e.Date);
+            if (!month) return;
 
-        const cats = Object.keys(monthsAgg[mk]);
-        const vals = cats.map(c => (monthsAgg[mk][c].toFixed(2)));
-        const monthColours = cats.map(label =>
+            if (month === currentSelectedMonthKey) {
+                currentSelectedMonthItems.push(e);
+            }
+
+            if (!itemsByMonth[month]) itemsByMonth[month] = [];
+            itemsByMonth[month].push(e);
+        });
+
+        //Update left pie charte
+        let curAgg = {};
+        currentSelectedMonthItems.forEach(e => {
+            curAgg[e.CategoryName] = (curAgg[e.CategoryName] || 0) + Number(e.Amount);
+        });
+
+        const curLabels = Object.keys(curAgg);
+        const curVals = curLabels.map(l => curAgg[l].toFixed(2));
+        const curColors = curLabels.map(l => categoryColors[l] ?? "#000000");
+
+        currentMonthChart.data.labels = curLabels;
+        currentMonthChart.data.datasets[0].data = curVals;
+        currentMonthChart.data.datasets[0].backgroundColor = curColors;
+        currentMonthChart.update();
+
+         
+        // Update other pie charts
+        for (const mk in PieCharts) {
+            const items = itemsByMonth[mk] || [];
+            let agg = {};
+            items.forEach(e => {
+                agg[e.CategoryName] = (agg[e.CategoryName] || 0) + Number(e.Amount);
+            });
+
+            const labels = Object.keys(agg);
+            const vals = labels.map(c => agg[c].toFixed(2));
+            const colors = labels.map(l => categoryColors[l] ?? "#000000");
+
+            PieCharts[mk].data.labels = labels;
+            PieCharts[mk].data.datasets[0].data = vals;
+            PieCharts[mk].data.datasets[0].backgroundColor = colors;
+            PieCharts[mk].update();
+        }
+
+
+        // Update average
+        let categories = {};
+        Object.keys(itemsByMonth).forEach(m => {
+            itemsByMonth[m].forEach(e => {
+                const cat = e.CategoryName;
+                if (!categories[cat]) {
+                    categories[cat] = { total: 0, months: new Set() };
+                }
+                categories[cat].total += Number(e.Amount);
+                categories[cat].months.add(m);
+            });
+        });
+
+        const avgLabels = Object.keys(categories);
+        const avgVals = avgLabels.map(c => (categories[c].total / categories[c].months.size).toFixed(2));
+        const avgColors = avgLabels.map(l => categoryColors[l] ?? "#000000");
+
+        avgChart.data.labels = avgLabels;
+        avgChart.data.datasets[0].data = avgVals;
+        avgChart.data.datasets[0].backgroundColor = avgColors;
+        avgChart.update();
+    }
+
+    function GenerateAveragePieChart() {
+        let categories = {};
+        Object.keys(itemsByMonth).forEach(m => {
+            itemsByMonth[m].forEach(e => {
+                const cat = e.CategoryName;
+                if (!categories[cat]) {
+                    categories[cat] = { total: 0, months: new Set() };
+                }
+                categories[cat].total += Number(e.Amount || 0);
+                categories[cat].months.add(m);
+            });
+        });
+
+        const avgLabels = Object.keys(categories);
+        const avgData = avgLabels.map(c => (categories[c].total / categories[c].months.size).toFixed(2));
+        const backgroundColors = avgLabels.map(label =>
             categoryColors[label] ?? "#000000"
         );
 
-        new Chart(canvas.getContext("2d"), {
+        avgChart = new Chart(document.getElementById("avgChart").getContext('2d'), {
             type: "pie",
-            data: { labels: cats, datasets: [{ data: vals, backgroundColor: monthColours }] },
-            options: { legend: { display: false } }
+            data: {
+                labels: avgLabels,
+                datasets: [{ backgroundColor: backgroundColors, data: avgData }]
+            },
+            options: { title: { display: true, text: "Average Monthly Expenses per Category" } }
+        });
+    }
+     
+    function GenerateCurrentMonthPieChart() {
+        const leftCanvas = document.getElementById("currentMonthChart").getContext("2d");
+
+        currentMonthChart = new Chart(leftCanvas, {
+            type: "pie",
+            data: {
+                datasets: [{}]
+            },
+            options: {
+                title: { display: true, text: "Expense for Current Month " }
+            }
+        }); 
+    }
+
+    function GenerateOtherMonthPieCharts() {
+        const monthsContainer = document.getElementById("monthsContainer");
+        const monthsAgg = {};
+        window.data.forEach(e => {
+            const m = getMonth(e.Date);
+            if (!m) return;
+
+            monthsAgg[m] = monthsAgg[m] || {};
+            monthsAgg[m][e.CategoryName] = (monthsAgg[m][e.CategoryName] || 0) + Number(e.Amount);
         });
 
-        const btn = document.createElement("button");
-        btn.textContent = "Edit Month";
-        btn.className = "edit-month-btn";
-        btn.addEventListener("click", () => showMonthDetails(mk));
+        const monthKeys = Object.keys(monthsAgg).sort().reverse();
 
-        wrap.appendChild(btn);
-        monthsContainer.appendChild(wrap);
-    });
+        monthKeys.forEach(mk => {
+            const m = getMonth(mk);
+            if (m === currentMonth) return;
 
+            const wrap = document.createElement('div');
+            wrap.className = "month-card";
 
-    let currentMonthChart = null;
-    const leftCanvas = document.getElementById("currentMonthChart").getContext("2d");
+            const [year, mm] = mk.split("-");
+            const label = `${monthNames[Number(mm) - 1]} ${year}`;
 
-    currentMonthChart = new Chart(leftCanvas, {
-        type: "pie",
-        data: {
-            datasets: [{ }]
-        },
-        options: {
-            title: { display: true, text: "Expense for Current Month "}
-        }
-    });
+            const title = document.createElement('h4');
+            title.textContent = label;
+            wrap.appendChild(title);
+
+            const canvas = document.createElement('canvas');
+            canvas.className = "month-chart";
+            wrap.appendChild(canvas);
+
+            const cats = Object.keys(monthsAgg[mk]);
+            const vals = cats.map(c => (monthsAgg[mk][c].toFixed(2)));
+            const monthColours = cats.map(label =>
+                categoryColors[label] ?? "#000000"
+            );
+
+            PieCharts[mk] = new Chart(canvas.getContext("2d"), {
+                type: "pie",
+                data: { labels: cats, datasets: [{ data: vals, backgroundColor: monthColours }] },
+                options: { legend: { display: false } }
+            });
+
+            const btn = document.createElement("button");
+            btn.textContent = "Edit Month";
+            btn.className = "edit-month-btn";
+            btn.addEventListener("click", () => showMonthDetails(mk));
+
+            wrap.appendChild(btn);
+            monthsContainer.appendChild(wrap);
+        });
+    }
+
 
     // Set of functions to control top left current month chart
     function updateLeftPieChartForMonth(monthKey) {
@@ -192,10 +285,12 @@
 
     // Update top right information for currently selected month
     function showMonthDetails(monthKey) {
-        updateLeftPieChartForMonth(monthKey);
+        currentSelectedMonthKey = monthKey;
 
-        const items = itemsByMonth[monthKey] || [];
-        const [y, m] = monthKey.split("-");
+        updateLeftPieChartForMonth(currentSelectedMonthKey);
+
+        const items = itemsByMonth[currentSelectedMonthKey] || [];
+        const [y, m] = currentSelectedMonthKey.split("-");
         const label = `${monthNames[Number(m) - 1]} ${y}`;
 
         const container = document.createElement("div");
@@ -267,7 +362,7 @@
         footer.className = "sticky-footer";
 
 
-        if (monthKey !== currentMonth) {
+        if (currentSelectedMonthKey !== currentMonth) {
             const returnBtn = document.createElement("button");
             returnBtn.textContent = "Return";
             returnBtn.className = "btn btn-primary";
@@ -338,7 +433,9 @@
             })
             .then(() => { 
                 if (row) row.remove();
-                updateLeftPieChartForMonth(selectedMonth);
+                 
+                window.data = window.data.filter(x => x.Id !== id); 
+                UpdateAllCharts();
             })
             .catch(err => console.error("Delete failed:", err));
         }
