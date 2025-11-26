@@ -22,6 +22,23 @@
             .replace(/'/g, '&#039;');
     }
 
+    function sortCategories(labels, values, colors) {
+        const zipped = labels.map((label, i) => ({
+            label,
+            value: values[i],
+            color: colors[i],
+            order: categoryOrder.indexOf(label)
+        }));
+
+        zipped.sort((a, b) => a.order - b.order);
+
+        return {
+            labels: zipped.map(z => z.label),
+            values: zipped.map(z => z.value),
+            colors: zipped.map(z => z.color)
+        };
+    }
+
     if (!window.data || !Array.isArray(window.data)) return;
      
     const categoryColors = {
@@ -37,6 +54,7 @@
         "Education": "#99ff99",
         "Misc": "#ff6666"  
     };
+    const categoryOrder = Object.keys(categoryColors);
 
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -105,9 +123,11 @@
         const curVals = curLabels.map(l => curAgg[l].toFixed(2));
         const curColors = curLabels.map(l => categoryColors[l] ?? "#000000");
 
-        currentMonthChart.data.labels = curLabels;
-        currentMonthChart.data.datasets[0].data = curVals;
-        currentMonthChart.data.datasets[0].backgroundColor = curColors;
+        const sorted = sortCategories(curLabels, curVals, curColors);
+
+        currentMonthChart.data.labels = sorted.labels;
+        currentMonthChart.data.datasets[0].data = sorted.values;
+        currentMonthChart.data.datasets[0].backgroundColor = sorted.colors;
         currentMonthChart.update();
 
          
@@ -123,9 +143,11 @@
             const vals = labels.map(c => agg[c].toFixed(2));
             const colors = labels.map(l => categoryColors[l] ?? "#000000");
 
-            PieCharts[mk].data.labels = labels;
-            PieCharts[mk].data.datasets[0].data = vals;
-            PieCharts[mk].data.datasets[0].backgroundColor = colors;
+            const sortedOthers = sortCategories(labels, vals, colors);
+
+            PieCharts[mk].data.labels = sortedOthers.labels;
+            PieCharts[mk].data.datasets[0].data = sortedOthers.values;
+            PieCharts[mk].data.datasets[0].backgroundColor = sortedOthers.colors;
             PieCharts[mk].update();
         }
 
@@ -147,9 +169,11 @@
         const avgVals = avgLabels.map(c => (categories[c].total / categories[c].months.size).toFixed(2));
         const avgColors = avgLabels.map(l => categoryColors[l] ?? "#000000");
 
-        avgChart.data.labels = avgLabels;
-        avgChart.data.datasets[0].data = avgVals;
-        avgChart.data.datasets[0].backgroundColor = avgColors;
+        const sortedAverage = sortCategories(avgLabels, avgVals, avgColors);
+
+        avgChart.data.labels = sortedAverage.labels;
+        avgChart.data.datasets[0].data = sortedAverage.values;
+        avgChart.data.datasets[0].backgroundColor = sortedAverage.colors;
         avgChart.update();
     }
 
@@ -172,11 +196,16 @@
             categoryColors[label] ?? "#000000"
         );
 
+        const sorted = sortCategories(avgLabels, avgData, backgroundColors);
+
         avgChart = new Chart(document.getElementById("avgChart").getContext('2d'), {
             type: "pie",
             data: {
-                labels: avgLabels,
-                datasets: [{ backgroundColor: backgroundColors, data: avgData }]
+                labels: sorted.labels,
+                datasets: [{
+                    backgroundColor: sorted.colors,
+                    data: sorted.values
+                }]
             },
             options: { title: { display: true, text: "Average Monthly Expenses per Category" } }
         });
@@ -233,9 +262,17 @@
                 categoryColors[label] ?? "#000000"
             );
 
+            const sorted = sortCategories(cats, vals, monthColours);
+
             PieCharts[mk] = new Chart(canvas.getContext("2d"), {
                 type: "pie",
-                data: { labels: cats, datasets: [{ data: vals, backgroundColor: monthColours }] },
+                data: {
+                    labels: sorted.labels,
+                    datasets: [{
+                        backgroundColor: sorted.colors,
+                        data: sorted.values
+                    }]
+                },
                 options: { legend: { display: false } }
             });
 
@@ -251,7 +288,7 @@
 
 
     // Set of functions to control top left current month chart
-    function updateLeftPieChartForMonth(monthKey) {
+    function updateLeftPieChartForMonth(monthKey) { 
         const items = itemsByMonth[monthKey] || [];
         const grouped = {};
 
@@ -275,10 +312,12 @@
         const monthColours = labels.map(label =>
             categoryColors[label] ?? "#000000"
         );
+         
+        const sorted = sortCategories(labels, values, monthColours);
 
-        currentMonthChart.data.labels = labels;
-        currentMonthChart.data.datasets[0].data = values;
-        currentMonthChart.data.datasets[0].backgroundColor = monthColours;
+        currentMonthChart.data.labels = sorted.labels;
+        currentMonthChart.data.datasets[0].data = sorted.values;
+        currentMonthChart.data.datasets[0].backgroundColor = sorted.colors;
         currentMonthChart.options.title.text = "Expense for " + label;
         currentMonthChart.update();
     }
@@ -609,7 +648,7 @@
                 }
 
                 UpdateAllCharts();
-                showMonthDetails(currentSelectedMonthKey);
+                showMonthDetails(currentSelectedMonthKey); 
             })
             .catch(err => console.error("Edit failed:", err));
     }
