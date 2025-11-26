@@ -327,6 +327,7 @@
             tbody.appendChild(tr);
         } else {
             const deleteUrlBase = window.deleteExpenseUrl; // yields '/Expenses/Delete'
+            const editUrlBase = window.editExpenseUrl; // yields '/Expenses/Delete'
 
             items.sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
@@ -342,8 +343,13 @@
                     <td>${Number(item.Amount).toFixed(2)}</td>
                     <td>${escapeHtml(formatDateStr(item.Date))}</td>
                     <td>${escapeHtml(item.CategoryName)}</td> 
-                    <td class="actions-cell"> 
-                        <button id="edit+${item.Id}" onclick="SwapToConfirm(${item.Id})" class="btn btn-sm btn-edit">Edit</button>
+                    <td class="actions-cell">
+                        <button id="edit+${item.Id}" type="button"
+                                class="btn btn-sm btn-edit"
+                                onclick='SwapToEdit(${JSON.stringify(item)})'>
+                            Edit
+                        </button>
+
                         <form id="deleteForm+${item.Id}" action="${deleteUrlBase}/${item.Id}" method="post" style="display:inline;">
                             <input type="hidden" name="id" value="${item.Id}" />
                             <input name="__RequestVerificationToken" type="hidden" value="${tokenValue}" />  
@@ -496,8 +502,117 @@
                 showMonthDetails(currentSelectedMonthKey);
             })
             .catch(err => console.error("Create failed:", err));
+    } 
+
+
+    window.SwapToEdit = SwapToEdit;
+    function SwapToEdit(expense) {
+        const tokenInput = document.querySelector('#anti-forgery-token input[name="__RequestVerificationToken"]');
+        const tokenValue = tokenInput ? tokenInput.value : '';
+
+        const editUrl = window.editExpenseUrl.replace("{id}", expense.Id);
+
+        const container = document.createElement("div");
+        container.className = "create-panel-container";
+
+        container.innerHTML = `
+        <h3>Edit Expense</h3>
+
+        <form id="editForm" action="${editUrl}" method="post">
+
+            <input name="__RequestVerificationToken" type="hidden" value="${tokenValue}" />
+
+            <input type="hidden" name="Id" value="${expense.Id}" />
+            <input type="hidden" name="UserId" value="${expense.UserId}" />
+
+            <div class="form-field">
+                <label>Description</label>
+                <input type="text" name="Description" class="input-box" value="${escapeHtml(expense.Description)}" required />
+            </div>
+
+            <div class="form-field">
+                <label>Amount</label>
+                <input type="number" name="Amount" class="input-box" step="0.01" value="${expense.Amount}" required />
+            </div>
+
+            <div class="form-field">
+                <label>Date</label>
+                <input type="date" name="Date" class="input-box" value="${expense.Date.substring(0, 10)}" required />
+            </div>
+
+            <div class="form-field">
+                <label>Category</label>
+                <select name="CategoryId" class="input-box" required>
+                    ${window.categoriesList
+                .map(c =>
+                    `<option value="${c.Id}" ${c.Id === expense.CategoryId ? "selected" : ""}>
+                                ${escapeHtml(c.Name)}
+                            </option>`
+                ).join("")}
+                </select>
+            </div>
+
+            <div class="form-buttons">
+                <button type="button" class="btn btn-primary" id="editSubmitBtn">Save</button>
+                <button type="button" class="btn" id="editCancelBtn">Cancel</button>
+            </div>
+        </form>
+    `;
+
+        rightPanel.innerHTML = "";
+        rightPanel.appendChild(container);
+
+        document.getElementById("editCancelBtn").onclick = () => {
+            rightPanel.innerHTML = originalRightPaneHtml;
+            showMonthDetails(currentSelectedMonthKey);
+        };
+
+        document.getElementById("editSubmitBtn").onclick = SubmitEditForm;
     }
 
+
+    window.SubmitEditForm = SubmitEditForm;
+    function SubmitEditForm() {
+        const form = document.getElementById("editForm");
+        const data = new FormData(form);
+
+        fetch(form.action, {
+            method: "POST",
+            body: data,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+            .then(response => {
+                if (!response.ok) throw new Error("Network response was not ok");
+                return response.json();
+            })
+            .then(updated => {
+                console.log("Updated expense:", updated);
+
+                // Normalize casing (your current frontend format)
+                const normalized = {
+                    Description: updated.description,
+                    Amount: updated.amount,
+                    Date: updated.date,
+                    UserId: updated.userId,
+                    Id: updated.id,
+                    CategoryName: updated.categoryName,
+                    CategoryId: updated.categoryId
+                };
+
+                // Update in window.data
+                window.data = window.data || [];
+                const index = window.data.findIndex(x => x.Id === normalized.Id);
+                if (index >= 0) {
+                    window.data[index] = normalized;
+                }
+
+                UpdateAllCharts();
+                showMonthDetails(currentSelectedMonthKey);
+            })
+            .catch(err => console.error("Edit failed:", err));
+    }
 
 
     window.SwapToConfirm = SwapToConfirm;

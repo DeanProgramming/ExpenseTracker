@@ -129,42 +129,54 @@ namespace ExpenseTracker.Controllers
             return View(expense);
         }
 
-        // POST: Expenses/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Description,Amount,Date,UserId,CategoryId")] Expense expense)
         {
             if (id != expense.Id)
-            {
                 return NotFound();
+
+            ModelState.Remove(nameof(expense.User));
+            ModelState.Remove(nameof(expense.Category));
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors);
+                return BadRequest(ModelState);
             }
 
-            if (ModelState.IsValid)
+            try
             {
-                try
-                {
-                    _context.Update(expense);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ExpenseExists(expense.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                _context.Update(expense);
+                await _context.SaveChangesAsync();
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", expense.CategoryId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", expense.UserId);
-            return View(expense);
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Expenses.Any(e => e.Id == expense.Id))
+                    return NotFound();
+                throw;
+            }
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                await _context.Entry(expense).Reference(e => e.Category).LoadAsync();
+
+                return Json(new
+                {
+                    expense.Id,
+                    expense.Description,
+                    expense.Amount,
+                    expense.Date,
+                    expense.CategoryId,
+                    CategoryName = expense.Category.Name,
+                    expense.UserId
+                });
+            }
+
+            return RedirectToAction(nameof(Index));
         }
+
 
         // GET: Expenses/Delete/5
         public async Task<IActionResult> Delete(int? id)
