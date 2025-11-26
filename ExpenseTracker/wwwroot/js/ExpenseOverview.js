@@ -328,6 +328,8 @@
         } else {
             const deleteUrlBase = window.deleteExpenseUrl; // yields '/Expenses/Delete'
 
+            items.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
             items.forEach(item => {
                 const tokenInput = document.querySelector('#anti-forgery-token input[name="__RequestVerificationToken"]');
                 const tokenValue = tokenInput ? tokenInput.value : '';
@@ -399,6 +401,9 @@
 
     window.SwapToCreate = SwapToCreate; 
     function SwapToCreate() {
+        const tokenInput = document.querySelector('#anti-forgery-token input[name="__RequestVerificationToken"]');
+        const tokenValue = tokenInput ? tokenInput.value : '';
+        const createUrlBase = window.createExpenseUrl;
 
         const container = document.createElement("div");
         container.className = "create-panel-container";
@@ -406,7 +411,9 @@
         container.innerHTML = `
         <h3>Create New Expense</h3>
 
-        <form id="createExpenseForm">
+        <form id="createForm" action="${createUrlBase}" method="post">
+
+            <input name="__RequestVerificationToken" type="hidden" value="${tokenValue}" />
 
             <div class="form-field">
                 <label>Description</label>
@@ -425,20 +432,19 @@
 
             <div class="form-field">
                 <label>Category</label>
-            <select name="CategoryId" class="input-box" required>
-                ${window.categoriesList
-                    .map(c => `<option value="${c.Id}">${escapeHtml(c.Name)}</option>`)
-                    .join("")}
-            </select>
+                <select name="CategoryId" class="input-box" required>
+                    ${window.categoriesList
+                .map(c => `<option value="${c.Id}">${escapeHtml(c.Name)}</option>`)
+                .join("")}
+                </select>
             </div>
 
             <div class="form-buttons">
                 <button type="button" class="btn btn-primary" id="createSubmitBtn">Create</button>
                 <button type="button" class="btn" id="createCancelBtn">Cancel</button>
             </div>
-
         </form>
-        `;
+    `;
 
         rightPanel.innerHTML = "";
         rightPanel.appendChild(container);
@@ -448,7 +454,48 @@
             showMonthDetails(currentSelectedMonthKey);
         };
 
-        //document.getElementById("createSubmitBtn").onclick = submitCreateForm;
+        document.getElementById("createSubmitBtn").onclick = SubmitCreateForm;
+    }
+
+     
+    window.SubmitCreateForm = SubmitCreateForm; 
+    function SubmitCreateForm() {
+        const form = document.getElementById("createForm");
+        const data = new FormData(form);
+
+        fetch(form.action, {
+            method: "POST",
+            body: data,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest" // ← IMPORTANT!
+            }
+        })
+            .then(response => {
+                if (!response.ok) throw new Error("Network response was not ok");
+                return response.json();
+            })
+            .then(expense => {
+                console.log("Created expense:", expense);
+
+                const normalized = { /* camel Case and Pascal Case mismatching */
+                    Description: expense.description,
+                    Amount: expense.amount,
+                    Date: expense.date,
+                    UserId: expense.userId,
+                    Id: expense.id,
+                    CategoryName: expense.categoryName
+                };
+
+
+                // Ensure window.data exists
+                window.data = window.data || [];
+
+                window.data.push(normalized);
+
+                UpdateAllCharts();
+                showMonthDetails(currentSelectedMonthKey);
+            })
+            .catch(err => console.error("Create failed:", err));
     }
 
 

@@ -23,6 +23,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

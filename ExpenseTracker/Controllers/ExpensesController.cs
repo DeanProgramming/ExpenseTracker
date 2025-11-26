@@ -78,27 +78,38 @@ namespace ExpenseTracker.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Challenge();
 
-            // Assign server-side
             expense.UserId = user.Id;
 
-            // Remove ModelState errors for server-set properties
             ModelState.Remove(nameof(expense.UserId));
             ModelState.Remove(nameof(expense.User));
             ModelState.Remove(nameof(expense.Category));
 
-            // Re-validate the model
             if (!ModelState.IsValid)
-            {
-                ViewBag.CategoryId = new SelectList(_context.Categories.OrderBy(c => c.Name), "Id", "Name", expense.CategoryId);
-                return View(expense);
-            }
+                return BadRequest(ModelState);
 
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
+
+            // Load category for JSON return
+            await _context.Entry(expense).Reference(e => e.Category).LoadAsync();
+
+            // If request came from fetch(), return JSON
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new
+                {
+                    expense.Id,
+                    expense.Description,
+                    expense.Amount,
+                    expense.Date,
+                    CategoryName = expense.Category.Name,
+                    expense.UserId
+                });
+            }
+
+            // Fallback for normal MVC form
             return RedirectToAction(nameof(Index));
         }
-
-
 
         // GET: Expenses/Edit/5
         public async Task<IActionResult> Edit(int? id)
