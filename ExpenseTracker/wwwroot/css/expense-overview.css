@@ -1,13 +1,12 @@
 ﻿/* Theme engine */
 :root {
-    /* colors */
     --c-bg-light: #ffffff;
     --c-bg-dark: #181823;
     --c-panel-light: #f9fbff;
     --c-panel-accent: #d9f9ff;
     --c-text-dark: #16202a;
 
-    /* text */
+    /* text / accents */
     --c-primary-1: #1e88e5;
     --c-primary-2: #1976d2;
     --c-edit-bg: rgba(40,160,120,0.07);
@@ -23,18 +22,20 @@
     --shadow-panel: 0 6px 18px rgba(100,127,109,0.81);
     --shadow-btn: 0 6px 14px rgba(25,118,210,0.14);
 
-    /* ayout radius */
+    /* layout radius & gaps */
     --radius-lg: 16px;
     --radius-md: 12px;
     --radius-sm: 10px;
     --radius-xs: 6px;
+
     --gap-lg: 20px;
     --gap-md: 12px;
     --gap-sm: 8px;
-    --fade-1: rgba(255, 255, 255, 0.85);
-    --fade-2: rgba(250, 251, 255, 0.98);
+
+    --fade-1: rgba(255,255,255,0.85);
+    --fade-2: rgba(250,251,255,0.98);
 }
- 
+
 .overview-container {
     width: 100%;
     padding: 18px;
@@ -45,7 +46,7 @@
     flex-direction: column;
     gap: var(--gap-lg);
 }
- 
+
 .overview-row {
     display: flex;
     gap: 18px;
@@ -56,13 +57,14 @@
     align-items: stretch;
     height: 400px;
 }
- 
+
+/* columns / panels */
 .column-left,
 .column-right {
     flex: 1 1 50%;
     min-width: 0;
 }
- 
+
 .panel-left,
 .panel-right {
     border-radius: var(--radius-sm);
@@ -78,15 +80,16 @@
 
 .panel-right {
     background: linear-gradient(180deg, var(--fade-2), var(--fade-2));
-    border: 1px solid rgba(10, 10, 20, 0.03);
+    border: 1px solid rgba(10,10,20,0.03);
 }
- 
+
+/* panels content */
 .panel-title {
     margin: 0;
     font-size: 1.05rem;
     font-weight: 600;
     color: var(--c-text-dark);
-} 
+}
 
 .panel-body {
     flex: 1;
@@ -94,36 +97,36 @@
     display: flex;
     flex-direction: column;
 }
- 
+
+/* ensure charts are responsive */
 canvas {
     width: 100% !important;
     height: auto !important;
 }
- 
+
+/* scrollable panes */
 .scroll-pane {
     overflow: auto;
     max-height: 420px;
 }
-
-/* table items  */
 .table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.95rem;
 }
 
-.table thead th {
-    text-align: left;
-    font-weight: 700;
-    padding: 8px 10px;
-    color: #334B5C;
-    border-bottom: 1px dotted rgba(50,60,70,0.06);
-}
+    .table thead th {
+        text-align: left;
+        font-weight: 700;
+        padding: 8px 10px;
+        color: #334B5C;
+        border-bottom: 1px dotted rgba(50,60,70,0.06);
+    }
 
-.table tbody td {
-    padding: 8px 10px;
-    border-bottom: 1px solid rgba(20,25,30,0.03);
-}
+    .table tbody td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(20,25,30,0.03);
+    }
 
 .table-overflow {
     height: 250px !important;
@@ -137,7 +140,8 @@ canvas {
     justify-content: flex-end;
     align-items: center;
 }
- 
+
+/* Buttons  */
 .btn {
     display: inline-block;
     padding: 6px 10px;
@@ -147,6 +151,8 @@ canvas {
     cursor: pointer;
     transition: all 160ms ease;
     border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
 }
 
 .btn-primary {
@@ -174,10 +180,11 @@ canvas {
     border: 1px solid var(--c-del-border);
 }
 
-.btn-delete:hover {
-    background: var(--c-del-hover);
-}
-     
+    .btn-delete:hover {
+        background: var(--c-del-hover);
+    }
+
+/* sticky footer used in edit/create flows */
 .sticky-footer {
     display: flex;
     gap: 12px;
@@ -189,7 +196,7 @@ canvas {
     align-items: center;
 }
 
-/* Monthly grid */
+/* monthly gri */
 .months-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -204,10 +211,10 @@ canvas {
     text-align: center;
 }
 
-.month-card .month-chart {
-    height: 110px;
-    max-width: 100%;
-}
+    .month-card .month-chart {
+        height: 110px;
+        max-width: 100%;
+    }
 
 .edit-month-btn {
     display: inline-block;
@@ -217,34 +224,124 @@ canvas {
     background: rgba(20,30,40,0.04);
     color: #123;
 }
- 
-@media (max-width: 900px) {
-    .overview-row {
-        flex-direction: column;
-        height: auto;
-    }
 
 .create-panel-container {
-    background: linear-gradient(180deg, var(--fade-2), var(--fade-2));
-    padding: 16px;
+    background: linear-gradient(180deg, var(--fade-2), var(--fade-1));
+    padding: 14px 16px;
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-panel);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+    overflow: hidden; 
+    animation: fadeInPanel 0.2s ease-out;
+}
+
+.create-panel-container h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--c-text-dark);
+}
+
+#createForm,
+#editForm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    justify-content: space-between;
 }
 
 .form-field {
     display: flex;
     flex-direction: column;
-    margin-bottom: 14px;
+    gap: 2px;
 }
 
-.input-box {
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(0,0,0,0.15);
-    background: #fff;
-}
+    .form-field label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #2a3441;
+    }
+
+    .input-box,
+    .form-field select {
+        padding: 6px 8px;
+        border-radius: var(--radius-xs);
+        border: 1px solid rgba(0,0,0,0.15);
+        background: #fff;
+        font-size: 0.85rem;
+        height: 32px;
+        box-sizing: border-box;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+        .input-box:focus,
+        .form-field select:focus {
+            border-color: var(--c-primary-1);
+            box-shadow: 0 0 0 3px rgba(30,136,229,0.25);
+            outline: none;
+        }
 
 .form-buttons {
-    margin-top: 12px;
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    margin-top: 4px;
+    justify-content: flex-end;
+}
+
+    .form-buttons .btn {
+        min-width: 80px;
+        padding: 6px 8px;
+        font-size: 0.8rem;
+        border-radius: var(--radius-xs);
+    }
+
+@keyframes fadeInPanel {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@media (max-width: 900px) {
+    .overview-row {
+        flex-direction: column;
+        height: auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .create-panel-container {
+        height: auto;
+        padding: 14px;
+    }
+
+    .form-buttons {
+        flex-direction: column;
+    }
+
+    .form-buttons .btn {
+        width: 100%;
+    }
 }

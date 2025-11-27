@@ -12,6 +12,15 @@
         return isNaN(d) ? dateStr : d.toLocaleDateString();
     }
 
+    function lookUpCategoryID(category) {
+        for (let k in window.categoriesList) {
+            if (window.categoriesList[k].Name === category) {
+                return window.categoriesList[k].Id;
+            }
+        }
+        return null;
+    }
+
     function escapeHtml(str) {
         if (!str && str !== 0) return '';
         return String(str)
@@ -546,6 +555,10 @@
 
     window.SwapToEdit = SwapToEdit;
     function SwapToEdit(expense) {
+        if (expense.CategoryId === undefined) {
+            expense.CategoryId = lookUpCategoryID(expense.CategoryName);
+        }
+
         const tokenInput = document.querySelector('#anti-forgery-token input[name="__RequestVerificationToken"]');
         const tokenValue = tokenInput ? tokenInput.value : '';
 
