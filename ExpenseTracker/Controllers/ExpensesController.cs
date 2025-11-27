@@ -23,7 +23,6 @@ namespace ExpenseTracker.Controllers
             _userManager = userManager;
         }
 
-        // GET: Expenses
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
@@ -44,27 +43,6 @@ namespace ExpenseTracker.Controllers
             return View(expenses);
         }
 
-        // GET: Expenses/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var expense = await _context.Expenses
-                .Include(e => e.Category)
-                .Include(e => e.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (expense == null)
-            {
-                return NotFound();
-            }
-
-            return View(expense);
-        }
-
-        // GET: Expenses/Create
         public IActionResult Create()
         {
             ViewBag.CategoryId = new SelectList(_context.Categories.OrderBy(c => c.Name), "Id", "Name");
@@ -89,8 +67,6 @@ namespace ExpenseTracker.Controllers
 
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
-
-            // Load category for JSON return
             await _context.Entry(expense).Reference(e => e.Category).LoadAsync();
 
             // If request came from fetch(), return JSON
@@ -177,27 +153,6 @@ namespace ExpenseTracker.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-
-        // GET: Expenses/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var expense = await _context.Expenses
-                .Include(e => e.Category)
-                .Include(e => e.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (expense == null)
-            {
-                return NotFound();
-            }
-
-            return View(expense);
-        }
-
         // POST: Expenses/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -211,11 +166,6 @@ namespace ExpenseTracker.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool ExpenseExists(int id)
-        {
-            return _context.Expenses.Any(e => e.Id == id);
         }
     }
 }

@@ -296,7 +296,6 @@
     }
 
     /*Entries functionality*/
-
     window.SwapToCreate = function () {
         const token = document.querySelector('#anti-forgery-token input[name="__RequestVerificationToken"]')?.value ?? "";
         const createUrl = window.createExpenseUrl;
