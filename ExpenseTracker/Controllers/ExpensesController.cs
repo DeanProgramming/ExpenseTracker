@@ -1,5 +1,6 @@
 ﻿using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -23,16 +24,21 @@ namespace ExpenseTracker.Controllers
             _userManager = userManager;
         }
 
+        [Authorize]
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
 
             var expenses = await _context.Expenses
                 .Where(e => e.UserId == user.Id)
                 .Include(e => e.Category)
                 .Include(e => e.User)
                 .OrderByDescending(e => e.Date)
-                //.Where(e => e.Date.Month == DateTime.Today.Month)
                 .ToListAsync();
 
             ViewBag.CategoriesForJS = await _context.Categories
