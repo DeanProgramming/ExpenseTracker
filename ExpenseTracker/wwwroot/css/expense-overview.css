@@ -1,41 +1,4 @@
-﻿/* Theme engine */
-:root {
-    --c-bg-light: #ffffff;
-    --c-bg-dark: #181823;
-    --c-panel-light: #f9fbff;
-    --c-panel-accent: #d9f9ff;
-    --c-text-dark: #16202a;
-
-    /* text / accents */
-    --c-primary-1: #1e88e5;
-    --c-primary-2: #1976d2;
-    --c-edit-bg: rgba(40,160,120,0.07);
-    --c-edit-border: rgba(40,160,120,0.12);
-    --c-edit-text: #1b8a5a;
-    --c-del-bg: rgba(220,70,70,0.06);
-    --c-del-border: rgba(220,70,70,0.10);
-    --c-del-hover: rgba(220,70,70,0.12);
-    --c-del-text: #b33a3a;
-
-    /* button shadows */
-    --shadow-main: 0 10px 30px rgba(0,0,0,0.9);
-    --shadow-panel: 0 6px 18px rgba(100,127,109,0.81);
-    --shadow-btn: 0 6px 14px rgba(25,118,210,0.14);
-
-    /* layout radius & gaps */
-    --radius-lg: 16px;
-    --radius-md: 12px;
-    --radius-sm: 10px;
-    --radius-xs: 6px;
-
-    --gap-lg: 20px;
-    --gap-md: 12px;
-    --gap-sm: 8px;
-
-    --fade-1: rgba(255,255,255,0.85);
-    --fade-2: rgba(250,251,255,0.98);
-}
-
+﻿
 .overview-container {
     width: 100%;
     padding: 18px;
@@ -344,4 +307,14 @@ canvas {
     .form-buttons .btn {
         width: 100%;
     }
+}
+
+
+
+
+
+
+/*Login page changes*/
+.overview-row-login {
+    height: 800px;
 }
