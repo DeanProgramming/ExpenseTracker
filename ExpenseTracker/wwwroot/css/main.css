@@ -27,12 +27,23 @@
     --radius-md: 12px;
     --radius-sm: 10px;
     --radius-xs: 6px;
-
     --gap-lg: 20px;
     --gap-md: 12px;
     --gap-sm: 8px;
-
     --fade-1: rgba(255,255,255,0.85);
     --fade-2: rgba(250,251,255,0.98);
+
+    /* Categories */
+    --color-rent: #b91d47;
+    --color-transport: #00aba9;
+    --color-food: #2b5797;
+    --color-groceries: #e8c3b9;
+    --color-coffee: #1e7145;
+    --color-utilities: #ff9900;
+    --color-entertainment: #ffcc00;
+    --color-subscriptions: #66ccff;
+    --color-shopping: #cc66ff;
+    --color-education: #99ff99;
+    --color-misc: #ff6666;
 }
  

@@ -167,10 +167,7 @@ canvas {
 }
 
 .month-card {
-    background: linear-gradient(180deg, rgba(249,251,255,0.95), rgba(245,247,250,0.95));
     border-radius: var(--radius-sm);
-    padding: 8px;
-    border: 1px solid rgba(20,30,40,0.04);
     text-align: center;
 }
 
@@ -181,7 +178,7 @@ canvas {
 
 .edit-month-btn {
     display: inline-block;
-    margin-top: 8px;
+    margin-top: 4px;
     padding: 6px 8px;
     border-radius: 8px;
     background: rgba(20,30,40,0.04);

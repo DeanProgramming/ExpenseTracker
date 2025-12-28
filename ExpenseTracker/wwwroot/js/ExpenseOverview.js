@@ -1,18 +1,5 @@
 ﻿(function () {
-
-    const categoryColors = {
-        "Rent": "#b91d47",
-        "Transport": "#00aba9",
-        "Food": "#2b5797",
-        "Groceries": "#e8c3b9",
-        "Coffee": "#1e7145",
-        "Utilities": "#ff9900",
-        "Entertainment": "#ffcc00",
-        "Subscriptions": "#66ccff",
-        "Shopping": "#cc66ff",
-        "Education": "#99ff99",
-        "Misc": "#ff6666"
-    };
+    let categoryColors = {};
     const categoryOrder = Object.keys(categoryColors);
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -61,7 +48,6 @@
     let currentMonthChart = null;
     let avgChart = null;
 
-
     function createPieChart(canvas, labels, values, colors, title = null, hideLegend = false) {
         return new Chart(canvas.getContext("2d"), {
             type: "pie",
@@ -82,26 +68,13 @@
     }
 
     function GenerateAveragePieChart() {
-        const categoryTotals = {};
-
-        Object.entries(itemsByMonth).forEach(([m, items]) => {
-            items.forEach(e => {
-                const c = e.CategoryName;
-                (categoryTotals[c] ??= { total: 0, months: new Set() });
-                categoryTotals[c].total += +e.Amount;
-                categoryTotals[c].months.add(m);
-            });
-        });
-
-        const labels = Object.keys(categoryTotals);
-        const values = labels.map(c => (categoryTotals[c].total / categoryTotals[c].months.size).toFixed(2));
-        const colors = labels.map(l => categoryColors[l] ?? "#000");
-
-        const sorted = sortCategories(labels, values, colors);
+        const sorted = getAverageCategoryData();
 
         avgChart = createPieChart(
             document.getElementById("avgChart"),
-            sorted.labels, sorted.values, sorted.colors,
+            sorted.labels,
+            sorted.values,
+            sorted.colors,
             "Average Monthly Expenses per Category"
         );
     }
@@ -177,7 +150,7 @@
             chart.update();
         });
 
-        GenerateAveragePieChart();
+        updateAveragePieChart();
     }
 
     function updateLeftPieChartForMonth(monthKey) {
@@ -204,6 +177,38 @@
         currentMonthChart.data.datasets[0].backgroundColor = sorted.colors;
         currentMonthChart.options.title.text = "Expense for " + label;
         currentMonthChart.update();
+    }
+
+    function getAverageCategoryData() {
+        const categoryTotals = {};
+
+        Object.entries(itemsByMonth).forEach(([m, items]) => {
+            items.forEach(e => {
+                const c = e.CategoryName;
+                (categoryTotals[c] ??= { total: 0, months: new Set() });
+                categoryTotals[c].total += +e.Amount;
+                categoryTotals[c].months.add(m);
+            });
+        });
+
+        const labels = Object.keys(categoryTotals);
+        const values = labels.map(c =>
+            (categoryTotals[c].total / categoryTotals[c].months.size).toFixed(2)
+        );
+        const colors = labels.map(l => categoryColors[l] ?? "#000");
+
+        return sortCategories(labels, values, colors);
+    }
+
+    function updateAveragePieChart() {
+        const sorted = getAverageCategoryData();
+
+        avgChart.data.labels = sorted.labels;
+        avgChart.data.datasets[0].data = sorted.values;
+        avgChart.data.datasets[0].backgroundColor = sorted.colors;
+        avgChart.options.title.text = "Average Monthly Expenses per Category";
+
+        avgChart.update();
     }
 
     /*Update top right panel - Monthly entries */
@@ -487,6 +492,23 @@
 
     /*First load - Generate charts and details */
     document.addEventListener("DOMContentLoaded", () => {
+
+        const styles = getComputedStyle(document.documentElement);
+
+        categoryColors = {
+            Rent: styles.getPropertyValue("--color-rent").trim(),
+            Transport: styles.getPropertyValue("--color-transport").trim(),
+            Food: styles.getPropertyValue("--color-food").trim(),
+            Groceries: styles.getPropertyValue("--color-groceries").trim(),
+            Coffee: styles.getPropertyValue("--color-coffee").trim(),
+            Utilities: styles.getPropertyValue("--color-utilities").trim(),
+            Entertainment: styles.getPropertyValue("--color-entertainment").trim(),
+            Subscriptions: styles.getPropertyValue("--color-subscriptions").trim(),
+            Shopping: styles.getPropertyValue("--color-shopping").trim(),
+            Education: styles.getPropertyValue("--color-education").trim(),
+            Misc: styles.getPropertyValue("--color-misc").trim()
+        };
+
         GenerateCurrentMonthPieChart();
         GenerateAveragePieChart();
         GenerateOtherMonthPieCharts();
