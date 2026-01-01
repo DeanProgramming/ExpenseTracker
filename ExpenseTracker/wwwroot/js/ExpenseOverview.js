@@ -1,6 +1,6 @@
 ﻿(function () {
     let categoryColors = {};
-    const categoryOrder = Object.keys(categoryColors);
+    let categoryOrder = Object.keys(categoryColors);
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     const getMonthKey = d => {
@@ -508,6 +508,8 @@
             Education: styles.getPropertyValue("--color-education").trim(),
             Misc: styles.getPropertyValue("--color-misc").trim()
         };
+
+        categoryOrder = Object.keys(categoryColors);
 
         GenerateCurrentMonthPieChart();
         GenerateAveragePieChart();
