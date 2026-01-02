@@ -1,52 +1,44 @@
 ﻿@page
-@model LoginModel
-
+@model RegisterModel
 @{
-    ViewData["Title"] = "Log in";
-}
+    ViewData["Title"] = "Register";
+} 
 
- 
-<div class="overview-container"> 
+<div class="overview-container">
     <div class="overview-row overview-row-login">
         <div class="column-left panel-left">
             <section>
-                <form id="account" method="post">
-                    <h2>Use a local account to log in.</h2>
+                <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                    <h2>Create a new account.</h2>
                     <hr />
                     <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
                     <div class="form-floating mb-3">
                         <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                        <label asp-for="Input.Email" class="form-label">Email</label>
+                        <label asp-for="Input.Email">Email</label>
                         <span asp-validation-for="Input.Email" class="text-danger"></span>
                     </div>
                     <div class="form-floating mb-3">
-                        <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                        <label asp-for="Input.Password" class="form-label">Password</label>
+                        <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                        <label asp-for="Input.Password">Password</label>
                         <span asp-validation-for="Input.Password" class="text-danger"></span>
                     </div>
-                    <div class="checkbox mb-3">
-                        <label asp-for="Input.RememberMe" class="form-label">
-                            <input class="form-check-input" asp-for="Input.RememberMe" />
-                            @Html.DisplayNameFor(m => m.Input.RememberMe)
-                        </label>
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                        <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+                        <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
                     </div>
-                    <div>
-                        <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-                    </div>
-                    <div>
-                        <p style="padding-top: 12px; justify-self: center;">
-                            <a class="btn btn-primary" id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>
-                            <a class="btn btn-primary" asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" style="margin-right: 10px; margin-left: 10px;">Register as a new user</a>
-                            <a class="btn btn-primary" id="resend-confirmation" asp-page="./ResendEmailConfirmation">Resend email confirmation</a>
-                        </p>
-                    </div>
-                </form>
+                    <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register Account</button>
+                </form> 
+
+                <a href="/Identity/Account/Login" class="w-100 btn btn-lg btn-primary" style="margin-top:10px;">
+                    Return to Login
+                </a>
             </section>
         </div>
 
         <div class="column-left panel-left">
             <section>
-                <h3>Use another service to log in.</h3>
+                <h3>Use another service to register.</h3>
                 <hr />
                 @{
                     if ((Model.ExternalLogins?.Count ?? 0) == 0)
@@ -74,26 +66,14 @@
                         </form>
                     }
                 }
-
-                <br />
-                <div>
-                    <p>PreCreated Account - With test data added </p>
-                    <p>EMAIL : test@example.com</p>
-                    <p>PASSWORD : Test@123</p>
-                </div>
             </section>
         </div>
     </div>
-     
-
 </div>
- 
+
 <link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/expense-overview.css" asp-append-version="true" />
-
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
-
- 
