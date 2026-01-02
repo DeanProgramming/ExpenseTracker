@@ -120,6 +120,12 @@
     }
 
     /*Functions for dealing with chartts update*/
+    function updateChart(chart, sortedData) {
+        chart.data.labels = sortedData.labels;
+        chart.data.datasets[0].data = sortedData.values;
+        chart.data.datasets[0].backgroundColor = sortedData.colors;
+        chart.update();
+    }
 
     function UpdateAllCharts() {
         // rebuild month groups
@@ -144,10 +150,7 @@
 
             const sorted = sortCategories(labels, vals, colors);
 
-            chart.data.labels = sorted.labels;
-            chart.data.datasets[0].data = sorted.values;
-            chart.data.datasets[0].backgroundColor = sorted.colors;
-            chart.update();
+            updateChart(chart, sorted); 
         });
 
         updateAveragePieChart();
@@ -171,12 +174,9 @@
         const label = `${monthNames[m - 1]} ${y}`;
 
         document.getElementById("LeftPieMonthTitle").textContent = label;
-
-        currentMonthChart.data.labels = sorted.labels;
-        currentMonthChart.data.datasets[0].data = sorted.values;
-        currentMonthChart.data.datasets[0].backgroundColor = sorted.colors;
-        currentMonthChart.options.title.text = "Expense for " + label;
-        currentMonthChart.update();
+         
+        currentMonthChart.options.title.text = "Expense for " + label; 
+        updateChart(currentMonthChart, sorted);
     }
 
     function getAverageCategoryData() {
@@ -201,14 +201,9 @@
     }
 
     function updateAveragePieChart() {
-        const sorted = getAverageCategoryData();
-
-        avgChart.data.labels = sorted.labels;
-        avgChart.data.datasets[0].data = sorted.values;
-        avgChart.data.datasets[0].backgroundColor = sorted.colors;
-        avgChart.options.title.text = "Average Monthly Expenses per Category";
-
-        avgChart.update();
+        const sorted = getAverageCategoryData(); 
+        avgChart.options.title.text = "Average Monthly Expenses per Category"; 
+        updateChart(avgChart, sorted); 
     }
 
     /*Update top right panel - Monthly entries */
@@ -463,20 +458,19 @@
         const form = document.getElementById("deleteForm+" + id);
         const row = document.getElementById("row+" + id);
 
-        if (deleteBtn.dataset.state !== "confirm") {
-            deleteBtn.dataset.state = "confirm";
+        if (!deleteBtn.classList.contains("confirm-delete")) {
+            deleteBtn.classList.add("confirm-delete");
             deleteBtn.textContent = "Confirm Delete";
-            deleteBtn.style.background = "red";
-            editBtn.style.display = "none";
+            editBtn.classList.add("hidden");
 
             setTimeout(() => {
-                if (deleteBtn.dataset.state === "confirm") {
-                    deleteBtn.dataset.state = "";
+                if (deleteBtn.classList.contains("confirm-delete")) {
+                    deleteBtn.classList.remove("confirm-delete");
                     deleteBtn.textContent = "Delete";
-                    deleteBtn.style.background = "";
-                    editBtn.style.display = "inline-block";
+                    editBtn.classList.remove("hidden");
                 }
             }, 3000);
+
             return;
         }
 
@@ -488,6 +482,7 @@
                 UpdateAllCharts();
             });
     };
+
 
 
     /*First load - Generate charts and details */

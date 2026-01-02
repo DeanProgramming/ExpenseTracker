@@ -147,6 +147,17 @@ canvas {
         background: var(--c-del-hover);
     }
 
+.confirm-delete {
+    background: red !important;
+    background-color: red !important;
+    color: white;
+}
+
+.hidden {
+    display: none;
+}
+
+
 /* sticky footer used in edit/create flows */
 .sticky-footer {
     display: flex;
