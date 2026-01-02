@@ -1,6 +1,6 @@
 ﻿(function () {
     let categoryColors = {};
-    let categoryOrder = Object.keys(categoryColors);
+    let categoryOrderMap = {};
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     const getMonthKey = d => {
@@ -21,7 +21,7 @@
             label: l,
             value: values[i],
             color: colors[i],
-            order: categoryOrder.indexOf(l)
+            order: categoryOrderMap[l] ?? 999
         })).sort((a, b) => a.order - b.order);
 
         return {
@@ -509,7 +509,9 @@
             Misc: styles.getPropertyValue("--color-misc").trim()
         };
 
-        categoryOrder = Object.keys(categoryColors);
+        categoryOrderMap = Object.fromEntries(
+            Object.keys(categoryColors).map((c, i) => [c, i])
+        );
 
         GenerateCurrentMonthPieChart();
         GenerateAveragePieChart();
