@@ -1,5 +1,6 @@
 using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using ExpenseTracker.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 .AddDefaultTokenProviders()
 .AddDefaultUI();
 
+builder.Services.AddScoped<ExpenseSeedService>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
@@ -34,8 +36,7 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<User>>();
 
-        context.Database.Migrate();  
-        DbSeeder.Seed(context, userManager); 
+        context.Database.Migrate();   
     }
     catch (Exception ex)
     {

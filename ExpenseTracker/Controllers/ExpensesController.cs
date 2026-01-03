@@ -1,10 +1,12 @@
 ﻿using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using ExpenseTracker.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,11 +19,13 @@ namespace ExpenseTracker.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<User> _userManager;
+        private readonly ExpenseSeedService _seedService;
 
-        public ExpensesController(ApplicationDbContext context, UserManager<User> userManager)
+        public ExpensesController(ApplicationDbContext context, UserManager<User> userManager, ExpenseSeedService seedService)
         {
             _context = context;
             _userManager = userManager;
+            _seedService = seedService;
         }
 
         [Authorize]
@@ -172,6 +176,24 @@ namespace ExpenseTracker.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Regenerate(bool userRequested = false)
+        {
+            bool regenerated = await _seedService.RegenerateExpensesAsync(userRequested);
+
+            if (!regenerated)
+                return Ok(new { success = false, message = "" });
+
+            if (!userRequested)
+                return Ok(new { success = true, message = "Demo Data regenerated" });
+
+            return Json(new
+            {
+                success = true,
+                message = "User Requested Regeneration complete"
+            });
         }
     }
 }

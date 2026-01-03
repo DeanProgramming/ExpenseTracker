@@ -95,6 +95,7 @@ canvas {
     height: 250px !important;
     overflow: auto;
     display: block;
+    width: 545px;
 }
 
 .actions-cell {
@@ -103,6 +104,7 @@ canvas {
     justify-content: flex-end;
     align-items: center;
 }
+ 
 
 /* Buttons  */
 .btn {

@@ -481,13 +481,47 @@
                 window.data = window.data.filter(x => x.Id !== id);
                 UpdateAllCharts();
             });
-    };
+    }; 
 
+    function getAntiForgeryToken() {
+        return document.querySelector(
+            '#anti-forgery-token input[name="__RequestVerificationToken"]'
+        )?.value ?? "";
+    }
 
+    function RegenerateExpenses(userRequested = false) {
+        const status = document.getElementById("regenerateStatus");
+
+        if (userRequested && status) {
+            status.value = "Regenerating...";
+        }
+
+        const url = userRequested
+            ? `${window.regenerateExpensesUrl}?userRequested=true`
+            : window.regenerateExpensesUrl;
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "RequestVerificationToken": getAntiForgeryToken(),
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data?.success) {
+                    window.location.reload();
+                } else if (status) {
+                    status.value = data?.message ?? "Failed to regenerate";
+                }
+            })
+            .catch(() => {
+                if (status) status.value = "Error regenerating data";
+            });
+    }
 
     /*First load - Generate charts and details */
-    document.addEventListener("DOMContentLoaded", () => {
-
+    document.addEventListener("DOMContentLoaded", () => { 
         const styles = getComputedStyle(document.documentElement);
 
         categoryColors = {
@@ -508,10 +542,17 @@
             Object.keys(categoryColors).map((c, i) => [c, i])
         );
 
+        RegenerateExpenses(false);
+
         GenerateCurrentMonthPieChart();
         GenerateAveragePieChart();
         GenerateOtherMonthPieCharts();
         showMonthDetails(currentMonth);
+
+        const regenBtn = document.getElementById("btnRegenerate");
+        if (regenBtn) {
+            regenBtn.addEventListener("click", () => RegenerateExpenses(true));
+        }
     });
 
 })();

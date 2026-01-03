@@ -31,7 +31,8 @@
     window.data = @Html.Raw(jsonData);
     window.deleteExpenseUrl = '@Url.Action("Delete", "Expenses")';  
     window.createExpenseUrl = '@Url.Action("Create", "Expenses")';  
-    window.editExpenseUrl = '@Url.Action("Edit", "Expenses")';  
+    window.editExpenseUrl = '@Url.Action("Edit", "Expenses")';
+    window.regenerateExpensesUrl = '@Url.Action("Regenerate", "Expenses")';
 </script>
 
 <script>
@@ -75,6 +76,13 @@
         </div>
     </div>
 
+</div>
+
+<div class="regenerate-container" style="text-align: center;"> 
+    <button id="btnRegenerate" class="btn btn-primary">Regenerate Demo Data</button>
+</div> 
+<div class="regenerate-container" style="text-align: center;">
+    <input type="text" id="regenerateStatus" readonly style="border:none; color:green; font-weight:bold; text-align: center; background: rgba(0, 0, 0, 0);" />
 </div>
 
 <script src="~/js/ExpenseOverview.js"></script>

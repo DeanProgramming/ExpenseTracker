@@ -1,29 +1,39 @@
-﻿using ExpenseTracker.Models;
+﻿using ExpenseTracker.Data;
+using ExpenseTracker.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ExpenseTracker.Data
+namespace ExpenseTracker.Services
 {
-    public static class DbSeeder
+    public class ExpenseSeedService
     {
-        public static void Seed(ApplicationDbContext context, UserManager<User> userManager)
+        private readonly ApplicationDbContext _context;
+        private readonly UserManager<User> _userManager;
+        public ExpenseSeedService(ApplicationDbContext context, UserManager<User> userManager)
         {
-            context.Database.EnsureCreated();
+            _context = context;
+            _userManager = userManager;
+        }
 
-            var user = userManager.Users.FirstOrDefault(u => u.Email == "test@example.com");
+        //Demo data auto-regenerates when stale but never overwrites user-edited data unless requested
+        public async Task<bool> RegenerateExpensesAsync(bool userRequested = false)
+        {
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == "test@example.com");
+
             if (user == null)
             {
                 user = new User { UserName = "test@example.com", Email = "test@example.com" };
-                userManager.CreateAsync(user, "Test@123").Wait();
+                await _userManager.CreateAsync(user, "Test@123");
             }
 
             // Categories
-            if (!context.Categories.Any())
+            if (!_context.Categories.Any())
             {
                 //Need a way to be able to create another category and add it to the colour list
-                context.Categories.AddRange(
+                _context.Categories.AddRange(
                     new Category { Name = "Rent" },
                     new Category { Name = "Transport" },
                     new Category { Name = "Food" },
@@ -36,10 +46,10 @@ namespace ExpenseTracker.Data
                     new Category { Name = "Education" },
                     new Category { Name = "Misc" }
                 );
-                context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
 
-            var categories = context.Categories.ToList();
+            var categories = _context.Categories.ToList();
             var rentCategory = categories.First(c => c.Name == "Rent");
             var transportCategory = categories.First(c => c.Name == "Transport");
             var foodCategory = categories.First(c => c.Name == "Food");
@@ -51,10 +61,35 @@ namespace ExpenseTracker.Data
 
             // Use the same date range for rent and other expenses
             var startDate = DateTime.Now.Date.AddMonths(-3);
-            var endDate = DateTime.Now.Date.AddMonths(0);
+            var endDate = DateTime.Now.Date.AddMonths(0); 
+            var startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+
+            // If page loaded (Not user requested)
+            if (userRequested == false)
+            {
+                bool hasCurrentMonthData = await _context.Expenses.AnyAsync(e =>
+                    e.UserId == user.Id &&
+                    e.Date >= startOfMonth &&
+                    e.Date <= endDate);
+
+                // If theres data in current month leave as is
+                if (hasCurrentMonthData)
+                {
+                    return false; // All good leave (Dont display message)
+                } 
+            }
+
+            // Wipe data for this user and regenerate data 
+            var existingExpenses = await _context.Expenses
+                .Where(e =>
+                    e.UserId == user.Id)
+                .ToListAsync();
+
+            _context.Expenses.RemoveRange(existingExpenses);
+            await _context.SaveChangesAsync();
 
             // Rent entries: first of each month in the date range
-            if (!context.Expenses.Any(e => e.CategoryId == rentCategory.Id))
+            if (!_context.Expenses.Any(e => e.CategoryId == rentCategory.Id && e.UserId == user.Id))
             {
                 var rentExpenses = new List<Expense>();
                 for (var month = new DateTime(startDate.Year, startDate.Month, 1); month <= endDate; month = month.AddMonths(1))
@@ -69,12 +104,12 @@ namespace ExpenseTracker.Data
                     });
                 }
 
-                context.Expenses.AddRange(rentExpenses);
-                context.SaveChanges();
+                _context.Expenses.AddRange(rentExpenses);
+                _context.SaveChanges();
             }
 
             // Daily transport/food/entertainment pattern
-            if (!context.Expenses.Any(e => e.CategoryId != rentCategory.Id))
+            if (!_context.Expenses.Any(e => e.CategoryId != rentCategory.Id && e.UserId == user.Id))
             {
                 var expenses = new List<Expense>();
 
@@ -171,9 +206,13 @@ namespace ExpenseTracker.Data
                     }
                 }
 
-                context.Expenses.AddRange(expenses);
-                context.SaveChanges();
+                _context.Expenses.AddRange(expenses);
+                await _context.SaveChangesAsync();
+
+                return true;
             }
+
+            return false;
         }
     }
 }
