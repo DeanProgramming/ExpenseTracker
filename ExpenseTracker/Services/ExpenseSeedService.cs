@@ -29,23 +29,34 @@ namespace ExpenseTracker.Services
                 await _userManager.CreateAsync(user, "Test@123");
             }
 
-            // Categories
-            if (!_context.Categories.Any())
+            // Categories 
+            var categoriesToAdd = new List<string>
             {
-                //Need a way to be able to create another category and add it to the colour list
-                _context.Categories.AddRange(
-                    new Category { Name = "Rent" },
-                    new Category { Name = "Transport" },
-                    new Category { Name = "Food" },
-                    new Category { Name = "Groceries" },
-                    new Category { Name = "Coffee" },
-                    new Category { Name = "Utilities" },
-                    new Category { Name = "Entertainment" },
-                    new Category { Name = "Subscriptions" },
-                    new Category { Name = "Shopping" },
-                    new Category { Name = "Education" },
-                    new Category { Name = "Misc" }
-                );
+                "Rent",
+                "Transport",
+                "Food",
+                "Groceries",
+                "Coffee",
+                "Utilities",
+                "Entertainment",
+                "Subscriptions",
+                "Shopping",
+                "Education",
+                "Misc"
+            }; 
+
+            var existingCategoryNames = _context.Categories
+                                                .Select(c => c.Name)
+                                                .ToList();
+
+            var missingCategories = categoriesToAdd
+                                    .Where(c => !existingCategoryNames.Contains(c))
+                                    .Select(c => new Category { Name = c })
+                                    .ToList();
+
+            if (missingCategories.Any())
+            {
+                _context.Categories.AddRange(missingCategories);
                 await _context.SaveChangesAsync();
             }
 

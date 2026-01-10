@@ -416,3 +416,13 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# user secrets
+secrets.json
+# Visual Studio
+.vs/
+# EF Core migrations db file 
+*.db
+# local publish folder
+bin/
+obj/
