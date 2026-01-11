@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -20,12 +21,14 @@ namespace ExpenseTracker.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<User> _userManager;
         private readonly ExpenseSeedService _seedService;
+        private readonly IMemoryCache _cache;
 
-        public ExpensesController(ApplicationDbContext context, UserManager<User> userManager, ExpenseSeedService seedService)
+        public ExpensesController(ApplicationDbContext context, UserManager<User> userManager, ExpenseSeedService seedService, IMemoryCache cache)
         {
             _context = context;
             _userManager = userManager;
             _seedService = seedService;
+            _cache = cache;
         }
 
         [Authorize]
@@ -183,8 +186,24 @@ namespace ExpenseTracker.Controllers
         {
             bool regenerated = await _seedService.RegenerateExpensesAsync(userRequested);
 
+
             if (!regenerated)
+            {
+                // If this was user-requested, it might have been blocked by cooldown
+                if (userRequested)
+                {
+                    var user = await _userManager.GetUserAsync(User);
+
+                    if (!string.IsNullOrEmpty(user.Id))
+                    {
+                        var messageKey = $"regen-expenses:msg:{user.Id}";
+                        if (_cache.TryGetValue<string>(messageKey, out var msg) && !string.IsNullOrWhiteSpace(msg))
+                            return Ok(new { success = false, message = msg });
+                    }
+                }
+
                 return Ok(new { success = false, message = "" });
+            }
 
             if (!userRequested)
                 return Ok(new { success = true, message = "Demo Data regenerated" });

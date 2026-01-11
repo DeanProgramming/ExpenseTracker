@@ -2,6 +2,7 @@
 using ExpenseTracker.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,10 +13,15 @@ namespace ExpenseTracker.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<User> _userManager;
-        public ExpenseSeedService(ApplicationDbContext context, UserManager<User> userManager)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMemoryCache _cache;
+
+        public ExpenseSeedService(ApplicationDbContext context, UserManager<User> userManager, IHttpContextAccessor httpContextAccessor, IMemoryCache cache)
         {
             _context = context;
             _userManager = userManager;
+            _httpContextAccessor = httpContextAccessor;
+            _cache = cache;
         }
 
         //Demo data auto-regenerates when stale but never overwrites user-edited data unless requested
@@ -28,6 +34,10 @@ namespace ExpenseTracker.Services
                 user = new User { UserName = "test@example.com", Email = "test@example.com" };
                 await _userManager.CreateAsync(user, "Test@123");
             }
+            
+            user = await _userManager.GetUserAsync(
+                _httpContextAccessor.HttpContext.User
+            );
 
             // Categories 
             var categoriesToAdd = new List<string>
@@ -89,6 +99,28 @@ namespace ExpenseTracker.Services
                     return false; // All good leave (Dont display message)
                 } 
             }
+
+            // Cooldown prevent abuse of manual regeneration
+            if (userRequested)
+            {
+                var cooldown = TimeSpan.FromMinutes(2);
+                var cacheKey = $"expense-regenerate:last:{user.Id}";
+                var messageKey = $"regen-expenses:msg:{user.Id}";
+
+                if (_cache.TryGetValue<DateTimeOffset>(cacheKey, out var lastRun))
+                {
+                    var remaining = (lastRun + cooldown) - DateTimeOffset.UtcNow;
+                    if (remaining > TimeSpan.Zero)
+                    {
+                        _cache.Set(messageKey,  $"Please wait {remaining.Minutes}m {remaining.Seconds}s before regenerating again. ", remaining);
+                        return false; 
+                    }
+                }
+
+                _cache.Set(cacheKey, DateTimeOffset.UtcNow, cooldown);
+                _cache.Remove(messageKey);
+            }
+
 
             // Wipe data for this user and regenerate data 
             var existingExpenses = await _context.Expenses

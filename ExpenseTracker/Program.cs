@@ -29,7 +29,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 builder.Services.AddScoped<ExpenseSeedService>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
-
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
