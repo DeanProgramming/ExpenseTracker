@@ -40,12 +40,13 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<User>>();
-
-        //context.Database.Migrate();   
+         
+        context.Database.Migrate();   
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Seeding error: {ex.Message}");
+        throw;
     }
 }
 
