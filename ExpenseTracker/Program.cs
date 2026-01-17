@@ -14,7 +14,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
  
@@ -36,17 +36,23 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<User>>();
-         
-        context.Database.Migrate();   
+
+        if (app.Configuration.GetValue<bool>("RunMigrationsOnStartup"))
+        {
+            context.Database.Migrate();
+        }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Seeding error: {ex.Message}");
-        throw;
+        logger.LogError(ex, "Database migration failed during startup.");
+
+        if (app.Environment.IsDevelopment())
+            throw;
     }
 }
 
