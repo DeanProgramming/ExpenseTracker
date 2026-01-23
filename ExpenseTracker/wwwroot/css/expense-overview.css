@@ -328,3 +328,50 @@ canvas {
 .overview-row-login {
     height: 800px;
 }
+
+/* Mobile  */
+@media (max-width: 900px) {
+    .overview-row,
+    .overview-row-login {
+        height: auto; 
+    }
+
+    .scroll-pane {
+        max-height: none;
+        overflow: visible;
+    }
+}
+
+@media (max-width: 600px) {
+    .overview-container {
+        padding: 12px;
+    }
+
+    .overview-row {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .table-overflow {
+        width: 100%;
+        height: auto !important;
+        overflow-x: auto;
+    }
+
+    #regenerateStatus {
+        width: 100% !important;
+        max-width: 100%;
+    }
+
+    .overview-row-login p {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+        .overview-row-login p .btn {
+            width: 100%;
+            margin: 0 !important;
+        }
+}
