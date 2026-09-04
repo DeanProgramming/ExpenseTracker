@@ -355,8 +355,8 @@
                     Description: expense.description,
                     Amount: expense.amount,
                     Date: expense.date,
-                    UserId: expense.userId,
                     Id: expense.id,
+                    CategoryId: expense.categoryId,
                     CategoryName: expense.categoryName
                 };
 
@@ -382,7 +382,6 @@
 
                 <form id="editForm" action="${url}" method="post">
                     <input name="__RequestVerificationToken" type="hidden" value="${token}" />
-                    <input type="hidden" name="Id" value="${expense.Id}" />
 
                     <div class="form-field">
                         <label>Description</label>
@@ -436,7 +435,6 @@
                     Description: updated.description,
                     Amount: updated.amount,
                     Date: updated.date,
-                    UserId: updated.userId,
                     Id: updated.id,
                     CategoryName: updated.categoryName,
                     CategoryId: updated.categoryId
@@ -471,15 +469,27 @@
             }, 3000);
 
             return;
-        }
+        } 
 
-        fetch(form.action, { method: "POST", body: new FormData(form) })
-            .then(r => r.json().catch(() => ({})))
-            .then(() => {
-                row?.remove();
-                window.data = window.data.filter(x => x.Id !== id);
-                UpdateAllCharts();
-            });
+        fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Delete failed: ${response.status}`);
+            }
+
+            row?.remove();
+            window.data = window.data.filter(x => x.Id !== id);
+            UpdateAllCharts();
+        })
+        .catch(error => {
+            console.error(error);
+        });
     }; 
 
     function getAntiForgeryToken() {

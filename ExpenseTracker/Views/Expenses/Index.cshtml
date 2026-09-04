@@ -13,29 +13,48 @@
 @{
     var simpleData = Model.Select(e => new
     {
+        e.Id,
         e.Description,
         e.Amount,
         e.Date,
-        CategoryName = e.Category.Name,
-        e.Id
+        e.CategoryId,
+        CategoryName = e.Category.Name
     });
 
-    var jsonData = Newtonsoft.Json.JsonConvert.SerializeObject(simpleData);
+    var jsonSettings = new Newtonsoft.Json.JsonSerializerSettings
+    {
+        StringEscapeHandling =
+            Newtonsoft.Json.StringEscapeHandling.EscapeHtml
+    };
 
+    var jsonData = Newtonsoft.Json.JsonConvert.SerializeObject(
+        simpleData,
+        jsonSettings);
 
-    string[] monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun","Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var categoriesJson = Newtonsoft.Json.JsonConvert.SerializeObject(
+        ViewBag.CategoriesForJS,
+        jsonSettings);
+
+    string[] monthNames =
+    [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
 }
 
 <script>
     window.data = @Html.Raw(jsonData);
-    window.deleteExpenseUrl = '@Url.Action("Delete", "Expenses")';  
-    window.createExpenseUrl = '@Url.Action("Create", "Expenses")';  
+    window.categoriesList = @Html.Raw(categoriesJson);
+
+    window.deleteExpenseUrl = '@Url.Action("Delete", "Expenses")';
+    window.createExpenseUrl = '@Url.Action("Create", "Expenses")';
     window.editExpenseUrl = '@Url.Action("Edit", "Expenses")';
-    window.regenerateExpensesUrl = '@Url.Action("Regenerate", "Expenses")';
+    window.regenerateExpensesUrl =
+        '@Url.Action("Regenerate", "Expenses")';
 </script>
 
 <script>
-    window.data = @Json.Serialize(simpleData);
+    window.categoriesList = @Json.Serialize(simpleData);
 </script>
 
 <!-- OVERVIEW CONTAINER: holds both rows -->
