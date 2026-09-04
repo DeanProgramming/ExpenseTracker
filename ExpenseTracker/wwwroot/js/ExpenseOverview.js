@@ -374,7 +374,7 @@
         }
 
         const token = document.querySelector('#anti-forgery-token input[name="__RequestVerificationToken"]')?.value ?? "";
-        const url = window.editExpenseUrl.replace("{id}", expense.Id);
+        const url = `${window.editExpenseUrl}/${encodeURIComponent(expense.Id)}`;
 
         rightPanel.innerHTML = `
             <div class="create-panel-container">
@@ -383,7 +383,6 @@
                 <form id="editForm" action="${url}" method="post">
                     <input name="__RequestVerificationToken" type="hidden" value="${token}" />
                     <input type="hidden" name="Id" value="${expense.Id}" />
-                    <input type="hidden" name="UserId" value="${expense.UserId}" />
 
                     <div class="form-field">
                         <label>Description</label>

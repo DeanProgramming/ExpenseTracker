@@ -1,44 +1,24 @@
 ﻿using ExpenseTracker.Data;
 using ExpenseTracker.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace ExpenseTracker.Services
 {
     public class ExpenseSeedService
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<User> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ApplicationDbContext _context; 
         private readonly IMemoryCache _cache;
 
-        public ExpenseSeedService(ApplicationDbContext context, UserManager<User> userManager, IHttpContextAccessor httpContextAccessor, IMemoryCache cache)
+        public ExpenseSeedService(ApplicationDbContext context, IMemoryCache cache)
         {
-            _context = context;
-            _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
+            _context = context; 
             _cache = cache;
         }
 
         //Demo data auto-regenerates when stale but never overwrites user-edited data unless requested
-        public async Task<bool> RegenerateExpensesAsync(bool userRequested = false)
+        public async Task<bool> RegenerateExpensesAsync(string userId, bool userRequested = false)
         {
-            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == "test@example.com");
-
-            if (user == null)
-            {
-                user = new User { UserName = "test@example.com", Email = "test@example.com" };
-                await _userManager.CreateAsync(user, "Test@123");
-            }
-            
-            user = await _userManager.GetUserAsync(
-                _httpContextAccessor.HttpContext.User
-            );
-
             // Categories 
             var categoriesToAdd = new List<string>
             {
@@ -89,7 +69,7 @@ namespace ExpenseTracker.Services
             if (userRequested == false)
             {
                 bool hasCurrentMonthData = await _context.Expenses.AnyAsync(e =>
-                    e.UserId == user.Id &&
+                    e.UserId == userId &&
                     e.Date >= startOfMonth &&
                     e.Date <= endDate);
 
@@ -104,8 +84,8 @@ namespace ExpenseTracker.Services
             if (userRequested)
             {
                 var cooldown = TimeSpan.FromMinutes(2);
-                var cacheKey = $"expense-regenerate:last:{user.Id}";
-                var messageKey = $"regen-expenses:msg:{user.Id}";
+                var cacheKey = $"expense-regenerate:last:{userId}";
+                var messageKey = $"regen-expenses:msg:{userId}";
 
                 if (_cache.TryGetValue<DateTimeOffset>(cacheKey, out var lastRun))
                 {
@@ -125,14 +105,14 @@ namespace ExpenseTracker.Services
             // Wipe data for this user and regenerate data 
             var existingExpenses = await _context.Expenses
                 .Where(e =>
-                    e.UserId == user.Id)
+                    e.UserId == userId)
                 .ToListAsync();
 
             _context.Expenses.RemoveRange(existingExpenses);
             await _context.SaveChangesAsync();
 
             // Rent entries: first of each month in the date range
-            if (!_context.Expenses.Any(e => e.CategoryId == rentCategory.Id && e.UserId == user.Id))
+            if (!_context.Expenses.Any(e => e.CategoryId == rentCategory.Id && e.UserId == userId))
             {
                 var rentExpenses = new List<Expense>();
                 for (var month = new DateTime(startDate.Year, startDate.Month, 1); month <= endDate; month = month.AddMonths(1))
@@ -143,7 +123,7 @@ namespace ExpenseTracker.Services
                         Amount = 700m,
                         Date = month,
                         CategoryId = rentCategory.Id,
-                        UserId = user.Id
+                        UserId = userId
                     });
                 }
 
@@ -152,7 +132,7 @@ namespace ExpenseTracker.Services
             }
 
             // Daily transport/food/entertainment pattern
-            if (!_context.Expenses.Any(e => e.CategoryId != rentCategory.Id && e.UserId == user.Id))
+            if (!_context.Expenses.Any(e => e.CategoryId != rentCategory.Id && e.UserId == userId))
             {
                 var expenses = new List<Expense>();
 
@@ -167,7 +147,7 @@ namespace ExpenseTracker.Services
                             Amount = 5.00m,
                             Date = date,
                             CategoryId = transportCategory.Id,
-                            UserId = user.Id
+                            UserId = userId
                         });
 
                         expenses.Add(new Expense
@@ -176,7 +156,7 @@ namespace ExpenseTracker.Services
                             Amount = 5.00m,
                             Date = date,
                             CategoryId = transportCategory.Id,
-                            UserId = user.Id
+                            UserId = userId
                         });
                     }
 
@@ -188,7 +168,7 @@ namespace ExpenseTracker.Services
                         Amount = dailyFoodAmount,
                         Date = date,
                         CategoryId = foodCategory.Id,
-                        UserId = user.Id
+                        UserId = userId
                     });
 
                     // Weekly groceries on Sundays
@@ -201,7 +181,7 @@ namespace ExpenseTracker.Services
                             Amount = weeklyGroceries,
                             Date = date,
                             CategoryId = groceriesCategory.Id,
-                            UserId = user.Id
+                            UserId = userId
                         });
                     }
 
@@ -215,7 +195,7 @@ namespace ExpenseTracker.Services
                             Amount = coffeeAmt,
                             Date = date,
                             CategoryId = coffeeCategory.Id,
-                            UserId = user.Id
+                            UserId = userId
                         });
                     }
 
@@ -229,7 +209,7 @@ namespace ExpenseTracker.Services
                             Amount = entertainmentAmt,
                             Date = date,
                             CategoryId = entertainmentCategory.Id,
-                            UserId = user.Id
+                            UserId = userId
                         });
                     }
 
@@ -244,7 +224,7 @@ namespace ExpenseTracker.Services
                             Amount = shopAmt,
                             Date = date,
                             CategoryId = shopCat.Id,
-                            UserId = user.Id
+                            UserId = userId
                         });
                     }
                 }

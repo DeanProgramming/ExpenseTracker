@@ -1,21 +1,16 @@
 ﻿using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using ExpenseTracker.Models.Requests;
 using ExpenseTracker.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ExpenseTracker.Controllers
 {
+    [Authorize]
     public class ExpensesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -23,7 +18,11 @@ namespace ExpenseTracker.Controllers
         private readonly ExpenseSeedService _seedService;
         private readonly IMemoryCache _cache;
 
-        public ExpensesController(ApplicationDbContext context, UserManager<User> userManager, ExpenseSeedService seedService, IMemoryCache cache)
+        public ExpensesController(
+            ApplicationDbContext context,
+            UserManager<User> userManager,
+            ExpenseSeedService seedService,
+            IMemoryCache cache)
         {
             _context = context;
             _userManager = userManager;
@@ -31,126 +30,79 @@ namespace ExpenseTracker.Controllers
             _cache = cache;
         }
 
-        [Authorize]
         public async Task<IActionResult> Index()
         {
-            var user = await _userManager.GetUserAsync(User);
+            var userId = _userManager.GetUserId(User);
 
-            if (user == null)
+            if (string.IsNullOrWhiteSpace(userId))
             {
-                return NotFound();
+                return Challenge();
             }
 
             var expenses = await _context.Expenses
-                .Where(e => e.UserId == user.Id)
+                .AsNoTracking()
+                .Where(e => e.UserId == userId)
                 .Include(e => e.Category)
-                .Include(e => e.User)
                 .OrderByDescending(e => e.Date)
                 .ToListAsync();
 
             ViewBag.CategoriesForJS = await _context.Categories
+                .AsNoTracking()
                 .OrderBy(c => c.Id)
-                .Select(c => new { c.Id, c.Name }) 
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name
+                })
                 .ToListAsync();
 
             return View(expenses);
         }
 
-        public IActionResult Create()
-        {
-            ViewBag.CategoryId = new SelectList(_context.Categories.OrderBy(c => c.Name), "Id", "Name");
-            return View();
-        }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Description,Amount,Date,CategoryId")] Expense expense)
+        public async Task<IActionResult> Create(
+            CreateExpenseRequest request)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Challenge();
+            var userId = _userManager.GetUserId(User);
 
-            expense.UserId = user.Id;
-
-            ModelState.Remove(nameof(expense.UserId));
-            ModelState.Remove(nameof(expense.User));
-            ModelState.Remove(nameof(expense.Category));
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Challenge();
+            }
 
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            var categoryId = request.CategoryId!.Value;
+
+            var category = await _context.Categories
+                .AsNoTracking()
+                .SingleOrDefaultAsync(c => c.Id == categoryId);
+
+            if (category is null)
+            {
+                ModelState.AddModelError(nameof(request.CategoryId), "Select a valid category.");
+
+                return ValidationProblem(ModelState);
+            }
+
+            var expense = new Expense
+            {
+                Description = request.Description.Trim(),
+                Amount = request.Amount!.Value,
+                Date = request.Date!.Value,
+                CategoryId = categoryId,
+                UserId = userId
+            };
 
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
-            await _context.Entry(expense).Reference(e => e.Category).LoadAsync();
 
-            // If request came from fetch(), return JSON
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            if (IsAjaxRequest())
             {
-                return Json(new
-                {
-                    expense.Id,
-                    expense.Description,
-                    expense.Amount,
-                    expense.Date,
-                    CategoryName = expense.Category.Name,
-                    expense.UserId
-                });
-            }
-
-            // Fallback for normal MVC form
-            return RedirectToAction(nameof(Index));
-        }
-
-        // GET: Expenses/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var expense = await _context.Expenses.FindAsync(id);
-            if (expense == null)
-            {
-                return NotFound();
-            }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "Id", "Name", expense.CategoryId);
-            ViewData["UserId"] = new SelectList(_context.Users, "Id", "Id", expense.UserId);
-            return View(expense);
-        }
-
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Description,Amount,Date,UserId,CategoryId")] Expense expense)
-        {
-            if (id != expense.Id)
-                return NotFound();
-
-            ModelState.Remove(nameof(expense.User));
-            ModelState.Remove(nameof(expense.Category));
-
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors);
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                _context.Update(expense);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Expenses.Any(e => e.Id == expense.Id))
-                    return NotFound();
-                throw;
-            }
-
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                await _context.Entry(expense).Reference(e => e.Category).LoadAsync();
-
                 return Json(new
                 {
                     expense.Id,
@@ -158,61 +110,161 @@ namespace ExpenseTracker.Controllers
                     expense.Amount,
                     expense.Date,
                     expense.CategoryId,
-                    CategoryName = expense.Category.Name,
-                    expense.UserId
+                    CategoryName = category.Name
                 });
             }
 
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: Expenses/Delete/5
-        [HttpPost, ActionName("Delete")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> Edit(
+            int id,
+            EditExpenseRequest request)
         {
-            var expense = await _context.Expenses.FindAsync(id);
-            if (expense != null)
+            var userId = _userManager.GetUserId(User);
+
+            if (string.IsNullOrWhiteSpace(userId))
             {
-                _context.Expenses.Remove(expense);
+                return Challenge();
             }
 
-            await _context.SaveChangesAsync();
+            var expense = await _context.Expenses
+                .SingleOrDefaultAsync(e =>
+                    e.Id == id &&
+                    e.UserId == userId);
+
+            if (expense is null)
+            {
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            var categoryId = request.CategoryId!.Value;
+
+            var category = await _context.Categories
+                .AsNoTracking()
+                .SingleOrDefaultAsync(c => c.Id == categoryId);
+
+            if (category is null)
+            {
+                ModelState.AddModelError(nameof(request.CategoryId), "Select a valid category.");
+                return ValidationProblem(ModelState);
+            }
+
+            expense.Description = request.Description.Trim();
+            expense.Amount = request.Amount!.Value;
+            expense.Date = request.Date!.Value;
+            expense.CategoryId = categoryId;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return NotFound();
+            }
+
+            if (IsAjaxRequest())
+            {
+                return Json(new
+                {
+                    expense.Id,
+                    expense.Description,
+                    expense.Amount,
+                    expense.Date,
+                    expense.CategoryId,
+                    CategoryName = category.Name
+                });
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
-        public async Task<IActionResult> Regenerate(bool userRequested = false)
+        [ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            bool regenerated = await _seedService.RegenerateExpensesAsync(userRequested);
+            var userId = _userManager.GetUserId(User);
 
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Challenge();
+            }
+
+            var expense = await _context.Expenses.SingleOrDefaultAsync(e => e.Id == id && e.UserId == userId);
+
+            if (expense is null)
+            {
+                return NotFound();
+            }
+
+            _context.Expenses.Remove(expense);
+
+            await _context.SaveChangesAsync();
+
+            if (IsAjaxRequest())
+            {
+                return NoContent();
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Regenerate(
+            bool userRequested = false)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Challenge();
+            }
+
+            var regenerated = await _seedService.RegenerateExpensesAsync(userId, userRequested);
 
             if (!regenerated)
             {
-                // If this was user-requested, it might have been blocked by cooldown
                 if (userRequested)
                 {
-                    var user = await _userManager.GetUserAsync(User);
+                    var messageKey = $"regen-expenses:msg:{userId}";
 
-                    if (!string.IsNullOrEmpty(user.Id))
+                    if (_cache.TryGetValue<string>(messageKey, out var message) && !string.IsNullOrWhiteSpace(message))
                     {
-                        var messageKey = $"regen-expenses:msg:{user.Id}";
-                        if (_cache.TryGetValue<string>(messageKey, out var msg) && !string.IsNullOrWhiteSpace(msg))
-                            return Ok(new { success = false, message = msg });
+                        return Ok(new
+                        {
+                            success = false,
+                            message
+                        });
                     }
                 }
 
-                return Ok(new { success = false, message = "" });
+                return Ok(new
+                {
+                    success = false,
+                    message = string.Empty
+                });
             }
 
-            if (!userRequested)
-                return Ok(new { success = true, message = "Demo Data regenerated" });
-
-            return Json(new
+            return Ok(new
             {
                 success = true,
-                message = "User Requested Regeneration complete"
+                message = userRequested ? "User requested regeneration complete" : "Demo data regenerated"
             });
+        }
+
+        private bool IsAjaxRequest()
+        {
+            return Request.Headers["X-Requested-With"] == "XMLHttpRequest";
         }
     }
 }

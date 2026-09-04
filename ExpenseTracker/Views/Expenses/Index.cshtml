@@ -16,7 +16,6 @@
         e.Description,
         e.Amount,
         e.Date,
-        UserId = e.User.Id,
         CategoryName = e.Category.Name,
         e.Id
     });
@@ -36,7 +35,7 @@
 </script>
 
 <script>
-    window.categoriesList = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CategoriesForJS));
+    window.data = @Json.Serialize(simpleData);
 </script>
 
 <!-- OVERVIEW CONTAINER: holds both rows -->
