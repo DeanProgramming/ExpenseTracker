@@ -498,35 +498,36 @@
         )?.value ?? "";
     }
 
-    function RegenerateExpenses(userRequested = false) {
+    async function RegenerateExpenses() {
         const status = document.getElementById("regenerateStatus");
 
-        if (userRequested && status) {
-            status.value = "Regenerating...";
+        if (status) {
+            status.value = "Loading sample data...";
         }
 
-        const url = userRequested
-            ? `${window.regenerateExpensesUrl}?userRequested=true`
-            : window.regenerateExpensesUrl;
-
-        fetch(url, {
-            method: "POST",
-            headers: {
-                "RequestVerificationToken": getAntiForgeryToken(),
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        })
-            .then(r => r.json())
-            .then(data => {
-                if (data?.success) {
-                    window.location.reload();
-                } else if (status) {
-                    status.value = data?.message ?? "Failed to regenerate";
+        try {
+            const response = await fetch(window.regenerateExpensesUrl, {
+                method: "POST",
+                headers: {
+                    "RequestVerificationToken": getAntiForgeryToken(),
+                    "X-Requested-With": "XMLHttpRequest"
                 }
-            })
-            .catch(() => {
-                if (status) status.value = "Error regenerating data";
             });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ?? `Request failed: ${response.status}`
+                );
+            }
+
+            window.location.reload();
+        } catch (error) {
+            if (status) {
+                status.value = error.message ?? "Unable to load sample data";
+            }
+        }
     }
 
     /*First load - Generate charts and details */
@@ -549,9 +550,7 @@
 
         categoryOrderMap = Object.fromEntries(
             Object.keys(categoryColors).map((c, i) => [c, i])
-        );
-
-        RegenerateExpenses(false);
+        ); 
 
         GenerateCurrentMonthPieChart();
         GenerateAveragePieChart();
@@ -559,8 +558,17 @@
         showMonthDetails(currentMonth);
 
         const regenBtn = document.getElementById("btnRegenerate");
+
         if (regenBtn) {
-            regenBtn.addEventListener("click", () => RegenerateExpenses(true));
+            regenBtn.addEventListener("click", () => {
+                const confirmed = window.confirm(
+                    "This will replace all of your existing expenses with fictional sample data. Continue?"
+                );
+
+                if (confirmed) {
+                    RegenerateExpenses();
+                }
+            });
         }
     });
 

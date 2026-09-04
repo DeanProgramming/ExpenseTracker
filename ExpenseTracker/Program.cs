@@ -2,6 +2,7 @@ using ExpenseTracker.Data;
 using ExpenseTracker.Models;
 using ExpenseTracker.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +28,17 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 .AddDefaultUI();
 
 builder.Services.AddScoped<ExpenseSeedService>();
-builder.Services.AddControllersWithViews();
+
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+});
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "RequestVerificationToken";
+});
+
 builder.Services.AddRazorPages();
 builder.Services.AddMemoryCache();
 

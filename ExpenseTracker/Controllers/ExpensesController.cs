@@ -221,7 +221,7 @@ namespace ExpenseTracker.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Regenerate(
-            bool userRequested = false)
+            CancellationToken cancellationToken)
         {
             var userId = _userManager.GetUserId(User);
 
@@ -230,35 +230,44 @@ namespace ExpenseTracker.Controllers
                 return Challenge();
             }
 
-            var regenerated = await _seedService.RegenerateExpensesAsync(userId, userRequested);
+            var cacheKey = $"expense-regenerate:last:{userId}";
+            var cooldown = TimeSpan.FromMinutes(2);
+            var now = DateTimeOffset.UtcNow;
 
-            if (!regenerated)
+            if (_cache.TryGetValue<DateTimeOffset>(cacheKey, out var lastRun))
             {
-                if (userRequested)
-                {
-                    var messageKey = $"regen-expenses:msg:{userId}";
+                var remaining = lastRun.Add(cooldown) - now;
 
-                    if (_cache.TryGetValue<string>(messageKey, out var message) && !string.IsNullOrWhiteSpace(message))
+                if (remaining > TimeSpan.Zero)
+                {
+                    return StatusCode(StatusCodes.Status429TooManyRequests, new
                     {
-                        return Ok(new
-                        {
-                            success = false,
-                            message
-                        });
-                    }
+                        success = false,
+                        message =
+                            $"Please wait {remaining.Minutes}m {remaining.Seconds}s before regenerating again."
+                    });
                 }
+            }
 
-                return Ok(new
-                {
-                    success = false,
-                    message = string.Empty
-                });
+            _cache.Set(cacheKey, now, cooldown);
+
+            try
+            {
+                await _seedService.RegenerateExpensesAsync(
+                    userId,
+                    cancellationToken);
+            }
+            catch
+            {
+                // A failed request should not consume the cooldown.
+                _cache.Remove(cacheKey);
+                throw;
             }
 
             return Ok(new
             {
                 success = true,
-                message = userRequested ? "User requested regeneration complete" : "Demo data regenerated"
+                message = "Sample expenses loaded."
             });
         }
 

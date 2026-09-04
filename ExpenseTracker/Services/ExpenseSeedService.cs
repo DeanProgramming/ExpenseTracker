@@ -1,241 +1,225 @@
 ﻿using ExpenseTracker.Data;
 using ExpenseTracker.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace ExpenseTracker.Services
 {
     public class ExpenseSeedService
     {
-        private readonly ApplicationDbContext _context; 
-        private readonly IMemoryCache _cache;
+        private static readonly string[] RequiredCategoryNames =
+        [
+            "Rent",
+            "Transport",
+            "Food",
+            "Groceries",
+            "Coffee",
+            "Utilities",
+            "Entertainment",
+            "Subscriptions",
+            "Shopping",
+            "Education",
+            "Misc"
+        ];
 
-        public ExpenseSeedService(ApplicationDbContext context, IMemoryCache cache)
+        private readonly ApplicationDbContext _context;
+
+        public ExpenseSeedService(ApplicationDbContext context)
         {
-            _context = context; 
-            _cache = cache;
+            _context = context;
         }
 
-        //Demo data auto-regenerates when stale but never overwrites user-edited data unless requested
-        public async Task<bool> RegenerateExpensesAsync(string userId, bool userRequested = false)
+        public async Task RegenerateExpensesAsync(string userId, CancellationToken cancellationToken)
         {
-            // Categories 
-            var categoriesToAdd = new List<string>
+            if (string.IsNullOrWhiteSpace(userId))
             {
-                "Rent",
-                "Transport",
-                "Food",
-                "Groceries",
-                "Coffee",
-                "Utilities",
-                "Entertainment",
-                "Subscriptions",
-                "Shopping",
-                "Education",
-                "Misc"
-            }; 
-
-            var existingCategoryNames = _context.Categories
-                                                .Select(c => c.Name)
-                                                .ToList();
-
-            var missingCategories = categoriesToAdd
-                                    .Where(c => !existingCategoryNames.Contains(c))
-                                    .Select(c => new Category { Name = c })
-                                    .ToList();
-
-            if (missingCategories.Any())
-            {
-                _context.Categories.AddRange(missingCategories);
-                await _context.SaveChangesAsync();
+                throw new ArgumentException("A user ID is required.", nameof(userId));
             }
 
-            var categories = _context.Categories.ToList();
-            var rentCategory = categories.First(c => c.Name == "Rent");
-            var transportCategory = categories.First(c => c.Name == "Transport");
-            var foodCategory = categories.First(c => c.Name == "Food");
-            var groceriesCategory = categories.First(c => c.Name == "Groceries");
-            var entertainmentCategory = categories.First(c => c.Name == "Entertainment");
-            var coffeeCategory = categories.First(c => c.Name == "Coffee");
+            await EnsureCategoriesExistAsync(cancellationToken);
 
+            var categories = await _context.Categories
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            var categoryIds = categories
+                .GroupBy(
+                    category => category.Name,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First().Id,
+                    StringComparer.OrdinalIgnoreCase);
+
+            var missingCategories = RequiredCategoryNames
+                .Where(name => !categoryIds.ContainsKey(name))
+                .ToList();
+
+            if (missingCategories.Count > 0)
+            {
+                throw new InvalidOperationException($"Required categories are missing: " + $"{string.Join(", ", missingCategories)}");
+            }
+
+            var replacementExpenses = BuildReplacementExpenses(userId, categoryIds, DateTime.UtcNow.Date);
+
+            var existingExpenses = await _context.Expenses
+                .Where(expense => expense.UserId == userId)
+                .ToListAsync(cancellationToken);
+            
+            _context.Expenses.RemoveRange(existingExpenses);
+            _context.Expenses.AddRange(replacementExpenses);
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        private async Task EnsureCategoriesExistAsync(CancellationToken cancellationToken)
+        {
+            var existingCategoryNames = await _context.Categories
+                .AsNoTracking()
+                .Select(category => category.Name)
+                .ToListAsync(cancellationToken);
+
+            var existingNames = existingCategoryNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var missingCategories = RequiredCategoryNames
+                .Where(name => !existingNames.Contains(name))
+                .Select(name => new Category
+                {
+                    Name = name
+                })
+                .ToList();
+
+            if (missingCategories.Count == 0)
+            {
+                return;
+            }
+
+            _context.Categories.AddRange(missingCategories);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        private static List<Expense> BuildReplacementExpenses(string userId, IReadOnlyDictionary<string, int> categoryIds, DateTime today)
+        {
+            var expenses = new List<Expense>();
             var random = new Random();
 
-            // Use the same date range for rent and other expenses
-            var startDate = DateTime.Now.Date.AddMonths(-3);
-            var endDate = DateTime.Now.Date.AddMonths(0); 
-            var startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            var startDate = today.AddMonths(-3);
+            var endDate = today;
 
-            // If page loaded (Not user requested)
-            if (userRequested == false)
+            AddRentExpenses(expenses, userId, categoryIds["Rent"], startDate, endDate);
+
+            AddDailyExpenses(expenses, userId, categoryIds, startDate, endDate, random);
+
+            return expenses;
+        }
+
+        private static void AddRentExpenses(ICollection<Expense> expenses, string userId, int rentCategoryId, DateTime startDate, DateTime endDate)
+        {
+            var firstMonth = new DateTime(startDate.Year, startDate.Month, 1);
+
+            for (var month = firstMonth; month <= endDate; month = month.AddMonths(1))
             {
-                bool hasCurrentMonthData = await _context.Expenses.AnyAsync(e =>
-                    e.UserId == userId &&
-                    e.Date >= startOfMonth &&
-                    e.Date <= endDate);
-
-                // If theres data in current month leave as is
-                if (hasCurrentMonthData)
+                expenses.Add(new Expense
                 {
-                    return false; // All good leave (Dont display message)
-                } 
+                    Description = "Rent",
+                    Amount = 700m,
+                    Date = month,
+                    CategoryId = rentCategoryId,
+                    UserId = userId
+                });
             }
+        }
 
-            // Cooldown prevent abuse of manual regeneration
-            if (userRequested)
+        private static void AddDailyExpenses(ICollection<Expense> expenses, string userId, IReadOnlyDictionary<string, int> categoryIds, DateTime startDate, DateTime endDate, Random random)
+        {
+            for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
-                var cooldown = TimeSpan.FromMinutes(2);
-                var cacheKey = $"expense-regenerate:last:{userId}";
-                var messageKey = $"regen-expenses:msg:{userId}";
-
-                if (_cache.TryGetValue<DateTimeOffset>(cacheKey, out var lastRun))
+                if (date.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday)
                 {
-                    var remaining = (lastRun + cooldown) - DateTimeOffset.UtcNow;
-                    if (remaining > TimeSpan.Zero)
-                    {
-                        _cache.Set(messageKey,  $"Please wait {remaining.Minutes}m {remaining.Seconds}s before regenerating again. ", remaining);
-                        return false; 
-                    }
-                }
-
-                _cache.Set(cacheKey, DateTimeOffset.UtcNow, cooldown);
-                _cache.Remove(messageKey);
-            }
-
-
-            // Wipe data for this user and regenerate data 
-            var existingExpenses = await _context.Expenses
-                .Where(e =>
-                    e.UserId == userId)
-                .ToListAsync();
-
-            _context.Expenses.RemoveRange(existingExpenses);
-            await _context.SaveChangesAsync();
-
-            // Rent entries: first of each month in the date range
-            if (!_context.Expenses.Any(e => e.CategoryId == rentCategory.Id && e.UserId == userId))
-            {
-                var rentExpenses = new List<Expense>();
-                for (var month = new DateTime(startDate.Year, startDate.Month, 1); month <= endDate; month = month.AddMonths(1))
-                {
-                    rentExpenses.Add(new Expense
-                    {
-                        Description = $"Rent",
-                        Amount = 700m,
-                        Date = month,
-                        CategoryId = rentCategory.Id,
-                        UserId = userId
-                    });
-                }
-
-                _context.Expenses.AddRange(rentExpenses);
-                _context.SaveChanges();
-            }
-
-            // Daily transport/food/entertainment pattern
-            if (!_context.Expenses.Any(e => e.CategoryId != rentCategory.Id && e.UserId == userId))
-            {
-                var expenses = new List<Expense>();
-
-                for (var date = startDate; date <= endDate; date = date.AddDays(1))
-                {
-                    // Weekdays: transport to and back (£5 each)
-                    if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
-                    {
-                        expenses.Add(new Expense
-                        {
-                            Description = $"Transport - to work",
-                            Amount = 5.00m,
-                            Date = date,
-                            CategoryId = transportCategory.Id,
-                            UserId = userId
-                        });
-
-                        expenses.Add(new Expense
-                        {
-                            Description = $"Transport - return",
-                            Amount = 5.00m,
-                            Date = date,
-                            CategoryId = transportCategory.Id,
-                            UserId = userId
-                        });
-                    }
-
-                    // Daily food (small)
-                    var dailyFoodAmount = Math.Round((decimal)(random.NextDouble() * (12.0 - 3.0) + 3.0), 2);
                     expenses.Add(new Expense
                     {
-                        Description = $"Daily food / lunch",
-                        Amount = dailyFoodAmount,
+                        Description = "Transport - to work",
+                        Amount = 5m,
                         Date = date,
-                        CategoryId = foodCategory.Id,
+                        CategoryId = categoryIds["Transport"],
                         UserId = userId
                     });
 
-                    // Weekly groceries on Sundays
-                    if (date.DayOfWeek == DayOfWeek.Sunday)
+                    expenses.Add(new Expense
                     {
-                        var weeklyGroceries = Math.Round((decimal)(random.NextDouble() * (80.0 - 30.0) + 30.0), 2);
-                        expenses.Add(new Expense
-                        {
-                            Description = $"Weekly groceries",
-                            Amount = weeklyGroceries,
-                            Date = date,
-                            CategoryId = groceriesCategory.Id,
-                            UserId = userId
-                        });
-                    }
-
-                    // Coffee chance
-                    if (random.NextDouble() < 0.15)
-                    {
-                        var coffeeAmt = Math.Round((decimal)(random.NextDouble() * (4.5 - 1.5) + 1.5), 2);
-                        expenses.Add(new Expense
-                        {
-                            Description = $"Coffee",
-                            Amount = coffeeAmt,
-                            Date = date,
-                            CategoryId = coffeeCategory.Id,
-                            UserId = userId
-                        });
-                    }
-
-                    // Entertainment chance
-                    if (random.NextDouble() < 0.08)
-                    {
-                        var entertainmentAmt = Math.Round((decimal)(random.NextDouble() * (60.0 - 8.0) + 8.0), 2);
-                        expenses.Add(new Expense
-                        {
-                            Description = $"Entertainment",
-                            Amount = entertainmentAmt,
-                            Date = date,
-                            CategoryId = entertainmentCategory.Id,
-                            UserId = userId
-                        });
-                    }
-
-                    // Occasional shopping
-                    if (random.NextDouble() < 0.06)
-                    {
-                        var shopCat = categories.FirstOrDefault(c => c.Name == "Shopping") ?? categories.First();
-                        var shopAmt = Math.Round((decimal)(random.NextDouble() * (120.0 - 8.0) + 8.0), 2);
-                        expenses.Add(new Expense
-                        {
-                            Description = $"Shopping purchase",
-                            Amount = shopAmt,
-                            Date = date,
-                            CategoryId = shopCat.Id,
-                            UserId = userId
-                        });
-                    }
+                        Description = "Transport - return",
+                        Amount = 5m,
+                        Date = date,
+                        CategoryId = categoryIds["Transport"],
+                        UserId = userId
+                    });
                 }
 
-                _context.Expenses.AddRange(expenses);
-                await _context.SaveChangesAsync();
+                expenses.Add(new Expense
+                {
+                    Description = "Daily food / lunch",
+                    Amount = NextAmount(random, 3m, 12m),
+                    Date = date,
+                    CategoryId = categoryIds["Food"],
+                    UserId = userId
+                });
 
-                return true;
+                if (date.DayOfWeek == DayOfWeek.Sunday)
+                {
+                    expenses.Add(new Expense
+                    {
+                        Description = "Weekly groceries",
+                        Amount = NextAmount(random, 30m, 80m),
+                        Date = date,
+                        CategoryId = categoryIds["Groceries"],
+                        UserId = userId
+                    });
+                }
+
+                if (random.NextDouble() < 0.15)
+                {
+                    expenses.Add(new Expense
+                    {
+                        Description = "Coffee",
+                        Amount = NextAmount(random, 1.50m, 4.50m),
+                        Date = date,
+                        CategoryId = categoryIds["Coffee"],
+                        UserId = userId
+                    });
+                }
+
+                if (random.NextDouble() < 0.08)
+                {
+                    expenses.Add(new Expense
+                    {
+                        Description = "Entertainment",
+                        Amount = NextAmount(random, 8m, 60m),
+                        Date = date,
+                        CategoryId = categoryIds["Entertainment"],
+                        UserId = userId
+                    });
+                }
+
+                if (random.NextDouble() < 0.06)
+                {
+                    expenses.Add(new Expense
+                    {
+                        Description = "Shopping purchase",
+                        Amount = NextAmount(random, 8m, 120m),
+                        Date = date,
+                        CategoryId = categoryIds["Shopping"],
+                        UserId = userId
+                    });
+                }
             }
+        }
 
-            return false;
+        private static decimal NextAmount(Random random, decimal minimum, decimal maximum)
+        {
+            var range = maximum - minimum;
+
+            return Math.Round(
+                minimum + ((decimal)random.NextDouble() * range),
+                2);
         }
     }
 }
