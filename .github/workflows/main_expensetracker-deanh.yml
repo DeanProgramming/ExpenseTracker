@@ -13,32 +13,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Run tests
-    runs-on: windows-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.x'
-
-      - name: Restore test dependencies
-        run: dotnet restore .\ExpenseTracker.Tests\ExpenseTracker.Tests.csproj
-
-      - name: Run tests
-        run: dotnet test .\ExpenseTracker.Tests\ExpenseTracker.Tests.csproj --configuration Release --no-restore
-
   build:
-    name: Build and publish
     runs-on: windows-latest
-    needs: test
-    if: github.ref == 'refs/heads/main'
+
     permissions:
       contents: read
 
@@ -49,22 +26,28 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.x'
+          dotnet-version: '9.0.x'
 
-      - name: Restore application dependencies
-        run: dotnet restore .\ExpenseTracker\ExpenseTracker.csproj
+      - name: Show selected SDK
+        run: dotnet --version
 
-      - name: Build with dotnet
-        run: dotnet build .\ExpenseTracker\ExpenseTracker.csproj --configuration Release --no-restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-      - name: Publish with dotnet
-        run: dotnet publish .\ExpenseTracker\ExpenseTracker.csproj --configuration Release --no-build --output "${{ runner.temp }}\myapp"
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
 
-      - name: Upload artifact for deployment job
+      - name: Run automated tests
+        run: dotnet test --configuration Release --no-build
+
+      - name: Publish application
+        run: dotnet publish ExpenseTracker/ExpenseTracker.csproj --configuration Release --no-build --output "${{ runner.temp }}/myapp"
+
+      - name: Upload application artifact
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{ runner.temp }}\myapp
+          path: ${{ runner.temp }}/myapp
 
   deploy:
     name: Deploy to Azure
