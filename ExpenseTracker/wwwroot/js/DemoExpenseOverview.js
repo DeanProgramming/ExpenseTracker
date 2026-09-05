@@ -1,0 +1,277 @@
+﻿/* This file is loaded by /Demo only. Never load ExpenseOverview.js on /Demo. */
+(function () {
+    "use strict";
+
+    function init() {
+        const root = document.getElementById("expense-demo");
+        if (!root) return;
+        const byId = id => document.getElementById(id);
+        const status = byId("demo-status");
+        let store;
+        let initial;
+        try {
+            initial = JSON.parse(byId("demo-initial-data").textContent);
+            store = new DemoExpenseStore(initial.Expenses, initial.Categories);
+        } catch (error) {
+            status.textContent = "The demo could not load. Please refresh the page.";
+            status.classList.add("demo-error");
+            console.error(error);
+            return;
+        }
+
+        const categories = store.getCategories();
+        const money = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+        const monthFormat = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
+        const dateFormat = new Intl.DateTimeFormat("en-GB");
+        // Treat ISO dates as local calendar dates, not UTC timestamps.
+        const dateLabel = date => dateFormat.format(new Date(date + "T12:00:00"));
+        const monthLabel = month => monthFormat.format(new Date(month + "-01T12:00:00"));
+        const currentMonth = initial.CurrentMonth;
+        let selectedMonth = currentMonth;
+        let editingId = null;
+        const charts = [];
+        const monthSelect = byId("demo-month");
+        const dialog = byId("demo-expense-dialog");
+        const form = byId("demo-expense-form");
+        const formError = byId("demo-form-error");
+        const descriptionInput = byId("demo-description");
+        const amountInput = byId("demo-amount");
+        const dateInput = byId("demo-date");
+        const categoryInput = byId("demo-category");
+
+        const element = (tag, text, className) => {
+            const result = document.createElement(tag);
+            if (text !== undefined) result.textContent = text;
+            if (className) result.className = className;
+            return result;
+        };
+        const button = (text, onClick, className = "demo-button demo-button-secondary") => {
+            const result = element("button", text, className);
+            result.type = "button";
+            result.addEventListener("click", onClick);
+            return result;
+        };
+        const pennies = items => items.reduce((total, item) => total + Math.round(item.Amount * 100), 0);
+        const categoryTotals = items => {
+            const totals = new Map(categories.map(category => [category.Id, 0]));
+            for (const item of items) {
+                totals.set(item.CategoryId, totals.get(item.CategoryId) + Math.round(item.Amount * 100));
+            }
+            return categories.map(category => ({ ...category, Pennies: totals.get(category.Id) }))
+                .filter(category => category.Pennies > 0);
+        };
+        function announce(message) {
+            status.textContent = message;
+            status.classList.remove("demo-error");
+        }
+        function drawPie(canvas, totals, divisor = 1) {
+            if (typeof Chart !== "function") {
+                byId("demo-chart-warning").hidden = false;
+                canvas.hidden = true;
+                return;
+            }
+            try {
+                charts.push(new Chart(canvas.getContext("2d"), {
+                    type: "pie",
+                    data: {
+                        labels: totals.map(category => category.Name),
+                        datasets: [{
+                            data: totals.map(category => Number((category.Pennies / 100 / divisor).toFixed(2))),
+                            backgroundColor: totals.map(category => category.Color)
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 0 },
+                        legend: { display: false },
+                        tooltips: {
+                            callbacks: {
+                                label: (item, data) =>
+                                    data.labels[item.index] + ": " + money.format(data.datasets[0].data[item.index])
+                            }
+                        }
+                    }
+                }));
+            } catch (error) {
+                byId("demo-chart-warning").hidden = false;
+                canvas.hidden = true;
+                console.error(error);
+            }
+        }
+
+        function openForm(expense = null) {
+            editingId = expense ? expense.Id : null;
+            form.reset();
+            formError.hidden = true;
+            byId("demo-form-title").textContent = expense ? "Edit expense" : "Create expense";
+            byId("demo-save").textContent = expense ? "Save changes" : "Create expense";
+            descriptionInput.value = expense ? expense.Description : "";
+            amountInput.value = expense ? expense.Amount.toFixed(2) : "";
+            dateInput.value = expense ? expense.Date : selectedMonth + "-01";
+            categoryInput.value = expense ? expense.CategoryId : categories[0].Id;
+            dialog.showModal();
+            descriptionInput.focus();
+        }
+
+        function removeExpense(item) {
+            if (!window.confirm('Delete "' + item.Description + '" from this demo?')) return;
+            store.delete(item.Id);
+            render();
+            announce("Expense deleted from this tab only.");
+        }
+
+        function renderRows(items) {
+            const body = byId("demo-expense-rows");
+            body.replaceChildren();
+            if (items.length === 0) {
+                const row = element("tr");
+                const cell = element("td", "No transactions for this month. Try creating one.");
+                cell.colSpan = 5;
+                row.appendChild(cell);
+                body.appendChild(row);
+                return;
+            }
+            for (const item of [...items].sort((a, b) => b.Date.localeCompare(a.Date) || b.Id - a.Id)) {
+                const row = element("tr");
+                row.dataset.expenseId = item.Id;
+                row.append(
+                    element("td", item.Description),
+                    element("td", money.format(item.Amount)),
+                    element("td", dateLabel(item.Date)),
+                    element("td", item.CategoryName)
+                );
+                const actions = element("td");
+                const group = element("div", undefined, "demo-row-actions");
+                const edit = button("Edit", () => openForm(item));
+                edit.dataset.action = "edit";
+                edit.setAttribute("aria-label", "Edit " + item.Description);
+                const remove = button("Delete", () => removeExpense(item), "demo-button demo-button-danger");
+                remove.dataset.action = "delete";
+                remove.setAttribute("aria-label", "Delete " + item.Description);
+                group.append(edit, remove);
+                actions.appendChild(group);
+                row.appendChild(actions);
+                body.appendChild(row);
+            }
+        }
+
+        function render() {
+            // Rebuild chart instances and month cards, not just existing charts.
+            // This handles creating the first expense in a brand-new month and
+            // removing or moving the final expense out of an existing month.
+            for (const chart of charts) chart.destroy();
+            charts.length = 0;
+            const items = store.getAll();
+            const groups = new Map();
+            for (const item of items) {
+                const month = item.Date.slice(0, 7);
+                if (!groups.has(month)) groups.set(month, []);
+                groups.get(month).push(item);
+            }
+            const months = [...new Set([currentMonth, ...groups.keys()])].sort().reverse();
+            if (!months.includes(selectedMonth)) selectedMonth = currentMonth;
+            monthSelect.replaceChildren();
+            for (const month of months) {
+                const option = element("option", monthLabel(month));
+                option.value = month;
+                monthSelect.appendChild(option);
+            }
+            monthSelect.value = selectedMonth;
+            const selectedItems = groups.get(selectedMonth) || [];
+            const totals = categoryTotals(selectedItems);
+            byId("demo-month-title").textContent = monthLabel(selectedMonth);
+            byId("demo-table-title").textContent = "Expenses / " + monthLabel(selectedMonth);
+            byId("demo-month-total").textContent = money.format(pennies(selectedItems) / 100);
+            renderRows(selectedItems);
+            drawPie(byId("demo-month-chart"), totals);
+
+            const legend = byId("demo-category-totals");
+            legend.replaceChildren();
+            for (const category of totals) {
+                const item = element("li");
+                const swatch = element("span", "", "demo-swatch");
+                swatch.style.backgroundColor = category.Color;
+                swatch.setAttribute("aria-hidden", "true");
+                item.append(swatch, element("span", category.Name), element("strong", money.format(category.Pennies / 100)));
+                legend.appendChild(item);
+            }
+
+            // Every category uses the same denominator: distinct months that
+            // currently contain expenses, including zero spend for a category.
+            const divisor = groups.size || 1;
+            byId("demo-average-note").textContent = groups.size
+                ? "Across " + groups.size + " months containing expenses (including zero-spend categories)."
+                : "Add an expense to see monthly averages.";
+            drawPie(byId("demo-average-chart"), categoryTotals(items), divisor);
+
+            const history = byId("demo-months");
+            history.replaceChildren();
+            for (const month of months.filter(value => value !== selectedMonth)) {
+                const monthItems = groups.get(month) || [];
+                const card = element("article", undefined, "demo-month-card");
+                card.append(element("h3", monthLabel(month)), element("p", money.format(pennies(monthItems) / 100)));
+                const chartWrapper = element("div", undefined, "demo-mini-chart");
+                const canvas = element("canvas");
+                canvas.setAttribute("role", "img");
+                canvas.setAttribute("aria-label", "Spending by category for " + monthLabel(month));
+                chartWrapper.appendChild(canvas);
+                card.appendChild(chartWrapper);
+                card.appendChild(button("View month", () => {
+                    selectedMonth = month;
+                    render();
+                    monthSelect.focus();
+                }));
+                history.appendChild(card);
+                drawPie(canvas, categoryTotals(monthItems));
+            }
+        }
+
+        for (const category of categories) {
+            const option = element("option", category.Name);
+            option.value = category.Id;
+            categoryInput.appendChild(option);
+        }
+        form.addEventListener("submit", event => {
+            event.preventDefault();
+            if (!form.reportValidity()) return;
+            try {
+                const request = Object.fromEntries(new FormData(form));
+                const wasEditing = editingId !== null;
+                const saved = wasEditing ? store.edit(editingId, request) : store.create(request);
+                selectedMonth = saved.Date.slice(0, 7);
+                dialog.close();
+                render();
+                announce(wasEditing ? "Expense updated in this tab only." : "Expense created in this tab only.");
+            } catch (error) {
+                formError.textContent = error.message || "Unable to update the demo expense.";
+                formError.hidden = false;
+            }
+        });
+        byId("demo-cancel").addEventListener("click", () => dialog.close());
+        byId("demo-create").addEventListener("click", () => openForm());
+        byId("demo-regenerate").addEventListener("click", () => {
+            if (!window.confirm("Discard all changes in this demo tab and restore the starting data?")) return;
+            store.regenerate();
+            selectedMonth = currentMonth;
+            render();
+            announce("Original demo data restored. Nothing was saved to your account.");
+        });
+        monthSelect.addEventListener("change", () => {
+            selectedMonth = monthSelect.value;
+            render();
+        });
+
+        render();
+        monthSelect.disabled = false;
+        byId("demo-create").disabled = false;
+        byId("demo-regenerate").disabled = false;
+        announce("Ready. Changes stay in this tab only and reset on refresh.");
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init, { once: true });
+    } else {
+        init();
+    }
+})();

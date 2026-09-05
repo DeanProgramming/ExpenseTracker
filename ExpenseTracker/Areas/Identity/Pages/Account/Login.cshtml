@@ -5,8 +5,8 @@
     ViewData["Title"] = "Log in";
 }
 
- 
-<div class="overview-container"> 
+
+<div class="overview-container">
     <div class="overview-row overview-row-login">
         <div class="column-left panel-left">
             <section>
@@ -50,23 +50,26 @@
                 <hr />
                 <div>
                     <p>Thanks for checking out my project ! </p>
-                    <p>This uses Azure free services it takes a while to log in if project was untouched for a while </p> 
+                    <p>This uses Azure free services it takes a while to log in if project was untouched for a while </p>
                 </div>
 
-                <h3>Test Account</h3>
+                <h3>Interactive demo</h3>
                 <hr />
                 <div>
-                    <p>PreCreated Account - With test data added </p>
-                    <p>EMAIL : test@example.com</p>
-                    <p>PASSWORD : Test@123</p>
+                    <p>
+                        Try create, edit, delete and regenerate without signing in.
+                        Demo changes stay in this browser tab and reset on refresh.
+                    </p>
+                    <a class="btn btn-primary" asp-area="" asp-controller="Demo" asp-action="Index">Open interactive demo</a>
+                    <p>Register a separate account when you want to save your own expenses.</p>
                 </div>
             </section>
         </div>
     </div>
-     
+
 
 </div>
- 
+
 <link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/expense-overview.css" asp-append-version="true" />
 
@@ -75,4 +78,4 @@
     <partial name="_ValidationScriptsPartial" />
 }
 
- 
+

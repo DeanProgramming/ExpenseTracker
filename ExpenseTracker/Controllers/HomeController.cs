@@ -14,11 +14,12 @@ namespace ExpenseTracker.Controllers
             _logger = logger;
         }
 
-        [Authorize]
+        [AllowAnonymous]
+        [HttpGet]
         public IActionResult Index()
         {
-            return RedirectToAction("Index", "Expenses");
-        } 
+            return User.Identity?.IsAuthenticated == true ? RedirectToAction("Index", "Expenses") : RedirectToAction("Index", "Demo");
+        }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
@@ -27,3 +28,4 @@ namespace ExpenseTracker.Controllers
         }
     }
 }
+
