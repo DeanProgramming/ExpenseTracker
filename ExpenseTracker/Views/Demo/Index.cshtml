@@ -1,126 +1,18 @@
 ﻿@model ExpenseTracker.Models.ViewModels.ExpenseDashboardViewModel
 @using System.Text.Json
 @{
-    ViewData["Title"] = "Interactive demo"; 
-    var initialData = JsonSerializer.Serialize(Model);
+    ViewData["Title"] = "Interactive demo";
+    ViewData["IsDemoDashboard"] = true;
 }
 
-<link rel="stylesheet" href="~/css/demo-expenses.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
+<partial name="_ExpenseDashboard" />
 
-<section id="expense-demo" class="expense-demo" aria-labelledby="demo-title">
-    <header class="demo-banner">
-        <div>
-            <p class="demo-eyebrow">Expense Tracker / Interactive demo</p>
-            <h1 id="demo-title">Try your own changes.</h1>
-            <p>
-                Create, edit, delete and regenerate fictional expenses. Changes stay
-                in this tab only and reset when you refresh. No sign-in required.
-            </p>
-        </div>
-        <a class="demo-button demo-button-light" asp-area="Identity"
-           asp-page="/Account/Register">Create an account to save expenses</a>
-    </header>
+<script id="dashboard-initial-data" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model))</script>
 
-    <noscript><p class="demo-notice">Enable JavaScript to use the interactive demo.</p></noscript>
-    <p id="demo-status" class="demo-status" role="status" aria-live="polite">Loading demo...</p>
-    <p id="demo-chart-warning" class="demo-notice" hidden>
-        Charts could not load. You can still try every expense action below.
-    </p>
-
-    <div class="demo-toolbar">
-        <label for="demo-month">
-            Month
-            <select id="demo-month" disabled></select>
-        </label>
-        <div class="demo-actions">
-            <button id="demo-create" class="demo-button" type="button" disabled>Create expense</button>
-            <button id="demo-regenerate" class="demo-button demo-button-secondary"
-                    type="button" disabled>
-                Regenerate demo data
-            </button>
-        </div>
-    </div>
-
-    <div class="demo-grid">
-        <section class="demo-panel" aria-labelledby="demo-month-title">
-            <h2 id="demo-month-title">Selected month</h2>
-            <p class="demo-total" id="demo-month-total"></p>
-            <div class="demo-chart">
-                <canvas id="demo-month-chart" role="img"
-                        aria-label="Selected month spending by category"></canvas>
-            </div>
-            <ul id="demo-category-totals" class="demo-category-totals"
-                aria-label="Selected month category totals"></ul>
-        </section>
-
-        <section class="demo-panel demo-transactions" aria-labelledby="demo-table-title">
-            <h2 id="demo-table-title">Expenses</h2>
-            <div class="demo-table-scroll" tabindex="0" role="region" aria-label="Expense table">
-                <table>
-                    <caption class="demo-sr-only">Fictional expenses for the selected month</caption>
-                    <thead>
-                        <tr>
-                            <th scope="col">Description</th>
-                            <th scope="col">Amount</th>
-                            <th scope="col">Date</th>
-                            <th scope="col">Category</th>
-                            <th scope="col">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="demo-expense-rows"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <section class="demo-panel" aria-labelledby="demo-average-title">
-            <h2 id="demo-average-title">Average monthly spending</h2>
-            <p id="demo-average-note" class="demo-muted"></p>
-            <div class="demo-chart">
-                <canvas id="demo-average-chart" role="img"
-                        aria-label="Average monthly spending by category"></canvas>
-            </div>
-        </section>
-
-        <section class="demo-panel" aria-labelledby="demo-history-title">
-            <h2 id="demo-history-title">Explore other months</h2>
-            <div id="demo-months" class="demo-months"></div>
-        </section>
-    </div>
-
-    <dialog id="demo-expense-dialog" class="demo-dialog" aria-labelledby="demo-form-title"> 
-        <form id="demo-expense-form" method="dialog" asp-antiforgery="false">
-            <h2 id="demo-form-title">Create expense</h2>
-            <p id="demo-form-error" class="demo-error" role="alert" hidden></p>
-            <label for="demo-description">
-                Description
-                <input id="demo-description" name="Description" maxlength="200" required autocomplete="off" />
-            </label>
-            <label for="demo-amount">
-                Amount (£)
-                <input id="demo-amount" name="Amount" type="number" min="0.01" max="999999.99"
-                       step="0.01" inputmode="decimal" required />
-            </label>
-            <label for="demo-date">
-                Date
-                <input id="demo-date" name="Date" type="date" min="0001-01-01" max="9999-12-31" required />
-            </label>
-            <label for="demo-category">
-                Category
-                <select id="demo-category" name="CategoryId" required></select>
-            </label>
-            <p class="demo-muted">Demo limit: £999,999.99 per expense.</p>
-            <div class="demo-actions">
-                <button id="demo-save" class="demo-button" type="submit">Create expense</button>
-                <button id="demo-cancel" class="demo-button demo-button-secondary" type="button">Cancel</button>
-            </div>
-        </form>
-    </dialog>
-</section>
-
-<script id="demo-initial-data" type="application/json">@Html.Raw(initialData)</script>
-
-@section Scripts { 
+@section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
     <script src="~/js/DemoExpenseStore.js" asp-append-version="true"></script>
+    <script src="~/js/ExpenseDashboard.js" asp-append-version="true"></script>
     <script src="~/js/DemoExpenseOverview.js" asp-append-version="true"></script>
-} 
+}

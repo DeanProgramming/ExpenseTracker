@@ -1,0 +1,146 @@
+﻿<!-- Merged Demo and Live accounts together -->
+
+@{
+    // Presentation only; authentication and expense ownership remain server-side.
+    var isDemo = ViewData["IsDemoDashboard"] is true;
+}
+
+<section id="expense-dashboard" class="expense-demo" aria-labelledby="demo-title">
+    <header class="demo-banner">
+        <div>
+            <p class="demo-eyebrow">Expense Tracker / @(isDemo ? "Interactive demo" : "Your account")</p>
+            <h1 id="demo-title">@(isDemo ? "Try your own changes." : "Your expenses.")</h1>
+            @if (isDemo)
+            {
+                <p>
+                    Create, edit, delete and regenerate fictional expenses. Changes stay
+                    in this tab only and reset when you refresh. No sign-in required.
+                </p>
+            }
+            else
+            {
+                <p>
+                    Create and manage your expenses. Changes are saved to your account
+                    and are here when you next sign in.
+                </p>
+            }
+        </div>
+        @if (isDemo)
+        {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="demo-button demo-button-light" asp-area="" asp-controller="Expenses"
+                   asp-action="Index">Go to my expenses</a>
+            }
+            else
+            {
+                <a class="demo-button demo-button-light" asp-area="Identity" asp-page="/Account/Login"
+                   asp-route-returnUrl="@Url.Action("Index", "Expenses", new { area = "" })">Log in to save expenses</a>
+            }
+        }
+        else
+        {
+            <a class="demo-button demo-button-light" asp-area="Identity"
+               asp-page="/Account/Manage/Index">Manage account</a>
+        }
+    </header>
+
+    <noscript><p class="demo-notice">Enable JavaScript to use the expense dashboard.</p></noscript>
+    <p id="demo-status" class="demo-status" role="status" aria-live="polite">Loading expenses...</p>
+    <p id="demo-chart-warning" class="demo-notice" hidden>
+        Charts could not load. You can still try every expense action below.
+    </p>
+
+    <div class="demo-toolbar">
+        <label for="demo-month">
+            Month
+            <select id="demo-month" disabled></select>
+        </label>
+        <div class="demo-actions">
+            <button id="demo-create" class="demo-button" type="button" disabled>Create expense</button>
+            <button id="demo-regenerate" class="demo-button demo-button-secondary"
+                    type="button" disabled>
+                @(isDemo ? "Regenerate demo data" : "Regenerate sample data")
+            </button>
+        </div>
+    </div>
+
+    <div class="demo-grid">
+        <section class="demo-panel" aria-labelledby="demo-month-title">
+            <h2 id="demo-month-title">Selected month</h2>
+            <p class="demo-total" id="demo-month-total"></p>
+
+            <div class="demo-chart">
+                <canvas id="demo-month-chart" role="img" aria-label="Selected month spending by category"></canvas>
+            </div>
+
+            <ul id="demo-category-totals" class="demo-category-totals" aria-label="Selected month category totals"></ul>
+        </section>
+
+        <section class="demo-panel demo-transactions" aria-labelledby="demo-table-title">
+            <h2 id="demo-table-title">Expenses</h2>
+            <div class="demo-table-scroll" tabindex="0" role="region" aria-label="Expense table">
+                <table>
+                    <caption class="demo-sr-only">Expenses for the selected month</caption>
+
+                    <thead>
+                        <tr>
+                            <th scope="col">Description</th>
+                            <th scope="col">Amount</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Category</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="demo-expense-rows"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="demo-panel" aria-labelledby="demo-average-title">
+            <h2 id="demo-average-title">Average monthly spending</h2>
+            <p id="demo-average-note" class="demo-muted"></p>
+            <div class="demo-chart">
+                <canvas id="demo-average-chart" role="img" aria-label="Average monthly spending by category"></canvas>
+            </div>
+        </section>
+
+        <section class="demo-panel" aria-labelledby="demo-history-title">
+            <h2 id="demo-history-title">Explore other months</h2>
+            <div id="demo-months" class="demo-months"></div>
+        </section>
+    </div>
+
+    <dialog id="demo-expense-dialog" class="demo-dialog" aria-labelledby="demo-form-title">
+
+        <form id="demo-expense-form" method="dialog" asp-antiforgery="false">
+            <h2 id="demo-form-title">Create expense</h2>
+            <p id="demo-form-error" class="demo-error" role="alert" hidden></p>
+            <label for="demo-description">
+                Description
+                <input id="demo-description" name="Description" maxlength="200" required autocomplete="off" />
+            </label>
+            <label for="demo-amount">
+                Amount (£)
+                <input id="demo-amount" name="Amount" type="number" min="0.01" max="@(isDemo ? "999999.99" : "9999999999999999.99")"
+                       step="0.01" inputmode="decimal" required />
+            </label>
+            <label for="demo-date">
+                Date
+                <input id="demo-date" name="Date" type="date" min="0001-01-01" max="9999-12-31" required />
+            </label>
+            <label for="demo-category">
+                Category
+                <select id="demo-category" name="CategoryId" required></select>
+            </label>
+            @if (isDemo)
+            {
+                <p class="demo-muted">Demo limit: £999,999.99 per expense.</p>
+            }
+            <div class="demo-actions">
+                <button id="demo-save" class="demo-button" type="submit">Create expense</button>
+                <button id="demo-cancel" class="demo-button demo-button-secondary" type="button">Cancel</button>
+            </div>
+        </form>
+    </dialog>
+</section>

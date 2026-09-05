@@ -5,7 +5,6 @@
     --c-panel-light: #f9fbff;
     --c-panel-accent: #d9f9ff;
     --c-text-dark: #16202a;
-
     /* text / accents */
     --c-primary-1: #1e88e5;
     --c-primary-2: #1976d2;
@@ -16,12 +15,10 @@
     --c-del-border: rgba(220,70,70,0.10);
     --c-del-hover: rgba(220,70,70,0.12);
     --c-del-text: #b33a3a;
-
     /* button shadows */
     --shadow-main: 0 10px 30px rgba(0,0,0,0.9);
     --shadow-panel: 0 6px 18px rgba(100,127,109,0.81);
     --shadow-btn: 0 6px 14px rgba(25,118,210,0.14);
-
     /* layout radius & gaps */
     --radius-lg: 16px;
     --radius-md: 12px;
@@ -32,18 +29,370 @@
     --gap-sm: 8px;
     --fade-1: rgba(255,255,255,0.85);
     --fade-2: rgba(250,251,255,0.98);
-
     /* Categories */
     --color-rent: #b91d47;
     --color-transport: #00aba9;
     --color-food: #2b5797;
-    --color-groceries: #e8c3b9;
+    --color-groceries: #b27a64;
     --color-coffee: #1e7145;
-    --color-utilities: #ff9900;
-    --color-entertainment: #ffcc00;
-    --color-subscriptions: #66ccff;
-    --color-shopping: #cc66ff;
-    --color-education: #99ff99;
-    --color-misc: #ff6666;
+    --color-utilities: #d97706;
+    --color-entertainment: #ca8a04;
+    --color-subscriptions: #0284c7;
+    --color-shopping: #9333ea;
+    --color-education: #65a30d;
+    --color-misc: #e05c5c;
+    --color-bills: var(--color-utilities);
 }
- 
+
+/* Shared dashboard design for both /Demo and /Expenses. */
+.expense-demo {
+    --demo-blue: #1769aa;
+    --demo-text: #18293b;
+    --demo-border: #dce5ee;
+    color: var(--demo-text);
+    padding-bottom: 2rem;
+}
+
+    .expense-demo *, .expense-demo *::before, .expense-demo *::after {
+        box-sizing: border-box;
+    }
+
+.demo-banner {
+    background: linear-gradient(125deg, #12334f, #1769aa);
+    color: #fff;
+    border-radius: 16px;
+    padding: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+    .demo-banner h1 {
+        font-size: clamp(1.7rem, 4vw, 2.3rem);
+        margin: 0 0 12px;
+    }
+
+    .demo-banner p {
+        max-width: 620px;
+        margin-bottom: 0;
+        line-height: 1.6;
+    }
+
+    .demo-banner .demo-eyebrow {
+        font-size: .8rem;
+        letter-spacing: .08em;
+        margin-bottom: 10px;
+    }
+
+    .demo-banner a {
+        flex-shrink: 0;
+        max-width: 270px;
+    }
+
+.demo-toolbar, .demo-actions, .demo-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.demo-toolbar {
+    justify-content: space-between;
+    margin: 18px 0;
+}
+
+    .demo-toolbar label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+    }
+
+.demo-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr);
+    gap: 18px;
+}
+
+.demo-panel {
+    min-width: 0;
+    border: 1px solid var(--demo-border);
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+}
+
+    .demo-panel h2 {
+        font-size: 1.08rem;
+        margin: 0 0 14px;
+    }
+
+.demo-chart {
+    position: relative;
+    height: 220px;
+}
+
+.demo-mini-chart {
+    position: relative;
+    height: 100px;
+    margin-bottom: 12px;
+}
+
+.demo-total {
+    font-size: 1.9rem;
+    font-weight: 700;
+    margin: 0 0 12px;
+}
+
+.demo-category-totals {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    font-size: .85rem;
+}
+
+    .demo-category-totals li {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 7px 0;
+    }
+
+    .demo-category-totals strong {
+        margin-left: auto;
+    }
+
+.demo-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.demo-table-scroll {
+    overflow: auto;
+    max-height: 510px;
+}
+
+.demo-transactions table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .86rem;
+}
+
+.demo-transactions th {
+    position: sticky;
+    top: 0;
+    background: #f4f7fb;
+    z-index: 1;
+    text-align: left;
+}
+
+.demo-transactions th, .demo-transactions td {
+    padding: 11px 9px;
+    border-bottom: 1px solid #e8edf3;
+    vertical-align: middle;
+}
+
+    .demo-transactions td:first-child {
+        min-width: 130px;
+        max-width: 260px;
+        overflow-wrap: anywhere;
+    }
+
+    .demo-transactions td:nth-child(2), .demo-transactions td:nth-child(3) {
+        white-space: nowrap;
+    }
+
+.demo-row-actions {
+    flex-wrap: nowrap;
+}
+
+.expense-demo .demo-button {
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: var(--demo-blue);
+    color: #fff;
+    font: inherit;
+    font-size: .9rem;
+    line-height: 1.35;
+    padding: 10px 14px;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+}
+
+    .expense-demo .demo-button:hover {
+        filter: brightness(.94);
+    }
+
+    .expense-demo .demo-button:disabled {
+        cursor: wait;
+        opacity: .55;
+    }
+
+.expense-demo .demo-button-secondary {
+    color: #224260;
+    background: #eef3f8;
+    border-color: #d4dfeb;
+}
+
+.expense-demo .demo-button-danger {
+    color: #a82b33;
+    background: #fff0f0;
+    border-color: #f4d5d5;
+}
+
+.expense-demo .demo-button-light {
+    color: #12334f;
+    background: #fff;
+}
+
+.demo-row-actions .demo-button {
+    font-size: .78rem;
+    padding: 7px 9px;
+}
+
+.demo-months {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 12px;
+}
+
+.demo-month-card {
+    background: #f5f8fc;
+    padding: 14px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+    .demo-month-card h3 {
+        font-size: .9rem;
+        margin: 0 0 6px;
+    }
+
+    .demo-month-card p {
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+.demo-status {
+    font-size: .9rem;
+    min-height: 1.5em;
+    margin: 12px 0 0;
+}
+
+.demo-muted {
+    color: #546577;
+    font-size: .84rem;
+}
+
+.demo-notice {
+    background: #fff5d9;
+    color: #664800;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.demo-error {
+    color: #a21f2c;
+}
+
+.demo-dialog {
+    width: min(460px, calc(100% - 28px));
+    max-height: 90vh;
+    overflow: auto;
+    padding: 24px;
+    border: 1px solid #cbd8e5;
+    border-radius: 14px;
+    color: var(--demo-text);
+}
+
+    .demo-dialog::backdrop {
+        background: rgb(8 28 48 / 55%);
+    }
+
+    .demo-dialog h2 {
+        font-size: 1.3rem;
+        margin: 0;
+    }
+
+    .demo-dialog form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .demo-dialog label {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        font-size: .9rem;
+        font-weight: 600;
+    }
+
+.expense-demo input, .expense-demo select {
+    border: 1px solid #b8c8d8;
+    border-radius: 7px;
+    padding: 9px 10px;
+    background: #fff;
+    color: #18293b;
+    font: inherit;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.expense-demo :focus-visible {
+    outline: 3px solid #55a9eb;
+    outline-offset: 3px;
+}
+
+.demo-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+@media (max-width: 1000px) {
+    .demo-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .demo-banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 520px) {
+    .demo-banner {
+        padding: 20px;
+    }
+
+    .demo-panel {
+        padding: 14px;
+    }
+
+    .demo-toolbar, .demo-toolbar > label, .demo-toolbar > .demo-actions {
+        width: 100%;
+    }
+
+        .demo-toolbar select {
+            flex: 1;
+        }
+
+        .demo-toolbar .demo-button {
+            flex: 1;
+        }
+
+    .demo-dialog {
+        padding: 18px;
+    }
+
+        .demo-dialog .demo-actions .demo-button {
+            flex: 1;
+        }
+}

@@ -1,104 +1,51 @@
 ﻿@model IEnumerable<ExpenseTracker.Models.Expense>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
-
-<div id="anti-forgery-token" style="display:none">
-    @Html.AntiForgeryToken()
-</div>
-
+@using System.Globalization
+@using System.Text.Json
 @{
-    ViewData["Title"] = "Expense Overview";
-}
+    ViewData["Title"] = "My expenses";
+    ViewData["IsDemoDashboard"] = false;
 
-@{
-    var simpleData = Model.Select(e => new
+    // Keep the model and categories supplied by the existing authorized controller.
+    // Only display fields are serialized; ownership never comes from the browser.
+    var initialData = new
     {
-        e.Id,
-        e.Description,
-        e.Amount,
-        e.Date,
-        e.CategoryId,
-        CategoryName = e.Category.Name
-    });
-
-    var jsonSettings = new Newtonsoft.Json.JsonSerializerSettings
-    {
-        StringEscapeHandling =
-            Newtonsoft.Json.StringEscapeHandling.EscapeHtml
+        CurrentMonth = DateTime.UtcNow.ToString("yyyy-MM", CultureInfo.InvariantCulture),
+        Expenses = Model.Select(e => new
+        {
+            e.Id,
+            e.Description,
+            e.Amount,
+            Date = e.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            e.CategoryId,
+            CategoryName = e.Category.Name
+        }),
+        Categories = (object)ViewBag.CategoriesForJS
     };
-
-    var jsonData = Newtonsoft.Json.JsonConvert.SerializeObject(
-        simpleData,
-        jsonSettings);
-
-    var categoriesJson = Newtonsoft.Json.JsonConvert.SerializeObject(
-        ViewBag.CategoriesForJS,
-        jsonSettings);
-
-    string[] monthNames =
-    [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
+    var endpoints = new
+    {
+        Create = Url.Action("Create", "Expenses"),
+        Edit = Url.Action("Edit", "Expenses"),
+        Delete = Url.Action("Delete", "Expenses"),
+        Regenerate = Url.Action("Regenerate", "Expenses")
+    };
 }
 
-<script>
-    window.data = @Html.Raw(jsonData);
-    window.categoriesList = @Html.Raw(categoriesJson);
-
-    window.deleteExpenseUrl = '@Url.Action("Delete", "Expenses")';
-    window.createExpenseUrl = '@Url.Action("Create", "Expenses")';
-    window.editExpenseUrl = '@Url.Action("Edit", "Expenses")';
-    window.regenerateExpensesUrl =
-        '@Url.Action("Regenerate", "Expenses")';
-</script>
-
-<!-- OVERVIEW CONTAINER: holds both rows -->
-<div class="overview-container">
-
-    <!-- ROW 1 -->
-    <div class="overview-row">
-        <!-- Left column: current month chart -->
-        <div class="column-left panel-left">
-            <h2 id="LeftPieMonthTitle" class="panel-title">This Month</h2>
-            <div class="panel-body">
-                <canvas id="currentMonthChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Right column: Edit current month -->
-        <div id="rightPane" class="column-right panel-right scroll-pane">
-            <div class="month-edit-container">
-                <h3 id="ExpenseTableTitle">Editing expenses for @monthNames[DateTime.Now.Month - 1]</h3>                 
-            </div>  
-        </div>
-    </div>
-
-    <!-- ROW 2 -->
-    <div class="overview-row">
-        <!-- Left column: average chart -->
-        <div class="column-left panel-left">
-            <h2 class="panel-title">Average / Trends</h2>
-            <div class="panel-body">
-                <canvas id="avgChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Right column: monthly charts -->
-        <div id="monthsContainer" class="column-right panel-right months-grid">
-            <!-- Monthly charts will be injected here by ExpenseOverview.js -->
-        </div>
-    </div>
-
-</div>
-
-<div class="regenerate-container" style="text-align: center;"> 
-    <button id="btnRegenerate" class="btn btn-primary">Regenerate Demo Data</button>
-</div> 
-<div class="regenerate-container" style="text-align: center;">
-    <input type="text" id="regenerateStatus" readonly style="border:none; color:green; font-weight:bold; text-align: center; background: rgba(0, 0, 0, 0); width:100%;" />
-</div>
-
-<script src="~/js/ExpenseOverview.js"></script>
 <link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/css/expense-overview.css" asp-append-version="true" />
+<partial name="_ExpenseDashboard" />
+
+<div id="dashboard-antiforgery" hidden>@Html.AntiForgeryToken()</div>
+<p id="dashboard-login" hidden>
+    Your session has ended.
+    <a asp-area="Identity" asp-page="/Account/Login"
+       asp-route-returnUrl="@Url.Action("Index", "Expenses")">Log in again</a>.
+</p>
+<!-- Keep default JSON escaping so user descriptions cannot close this element. -->
+<script id="dashboard-initial-data" type="application/json">@Html.Raw(JsonSerializer.Serialize(initialData))</script>
+<script id="dashboard-endpoints" type="application/json">@Html.Raw(JsonSerializer.Serialize(endpoints))</script>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+    <script src="~/js/ExpenseApiStore.js" asp-append-version="true"></script>
+    <script src="~/js/ExpenseDashboard.js" asp-append-version="true"></script>
+    <script src="~/js/ExpenseOverview.js" asp-append-version="true"></script>
+}
